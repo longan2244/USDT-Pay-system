@@ -62,8 +62,8 @@
 1. **克隆项目**
 
 ```bash
-git clone https://github.com/yourusername/usdt-payment-api.git
-cd usdt-payment-api
+git clone https://github.com/longan2244/USDT-Pay-system.git
+cd USDT-Pay-system-master
 ```
 
 2. **安装依赖**
