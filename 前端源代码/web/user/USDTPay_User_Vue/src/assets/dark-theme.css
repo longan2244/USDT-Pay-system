@@ -1,0 +1,240 @@
+/* 暗色主题样式 */
+body {
+  background-color: #000;
+  color: #fff;
+}
+
+.container {
+  max-width: 100%;
+  padding: 0;
+}
+
+/* 头部样式 */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: #000;
+  border-bottom: 1px solid #333;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+/* 商品列表样式 */
+.product-list {
+  padding: 15px;
+}
+
+.product-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #333;
+}
+
+.product-info {
+  flex: 1;
+}
+
+.product-name {
+  font-size: 1.2rem;
+  margin-bottom: 5px;
+}
+
+.product-stock {
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+.product-price {
+  color: #b14aed;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  margin-right: 15px;
+}
+
+.quantity-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.quantity-display {
+  margin: 0 10px;
+  font-size: 1.1rem;
+}
+
+/* 底部结算栏 */
+.checkout-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: #111;
+  border-top: 1px solid #333;
+}
+
+.total-price {
+  font-size: 1.2rem;
+  color: #b14aed;
+}
+
+.checkout-btn {
+  background-color: rgb(183, 82, 239);
+  color: #fff;
+  border: none;
+  padding: 10px 30px;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* 支付模态框样式 */
+.modal-content {
+  background-color: #111;
+  color: #fff;
+  border: 1px solid #333;
+}
+
+.modal-header {
+  border-bottom: 1px solid #333;
+}
+
+.modal-footer {
+  border-top: 1px solid #333;
+}
+
+.btn-close {
+  color: #fff;
+  opacity: 0.8;
+}
+
+.alert-info {
+  background-color: #1a1a2e;
+  color: #fff;
+  border-color: #333;
+}
+
+.alert-warning {
+  background-color: #2d3436;
+  color: #fff;
+  border-color: #333;
+}
+
+.alert-success {
+  background-color: #1e3a2b;
+  color: #fff;
+  border-color: #333;
+}
+
+.alert-primary {
+  background-color: #1e3a8a;
+  color: #fff;
+  border-color: #333;
+}
+
+.text-danger {
+  color: #ff6b6b !important;
+}
+
+.text-primary {
+  color: #b14aed !important;
+}
+
+.form-control {
+  background-color: #222;
+  border-color: #333;
+  color: #fff;
+}
+
+.form-control:focus {
+  background-color: #333;
+  color: #fff;
+}
+
+#payment-expires {
+  color: #fff !important;
+}
+
+.btn-outline-secondary {
+  color: #000000;
+  border-color: #666;
+}
+
+.btn-outline-secondary-w {
+  color: white;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+.btn-secondary {
+  background-color: #333;
+  border-color: #444;
+}
+
+.btn-primary {
+  background-color: rgb(183, 82, 239);
+  border-color: rgba(177, 74, 237, 0.15);
+}
+
+.progress {
+  background-color: #333;
+}
+
+.progress-bar {
+  background-color: rgb(183, 82, 239);
+}
+
+/* 卡密复制按钮 */
+.copy-card-btn {
+  background-color: #2d3436;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+/* 订单状态标签 */
+.badge.bg-success {
+  background-color: #27ae60 !important;
+}
+
+.badge.bg-warning {
+  background-color: #f39c12 !important;
+}
+
+/* 卡密显示区域 */
+.card-key-display {
+  /* background-color: #222; */
+  padding: 10px;
+  border-radius: 5px;
+  font-family: monospace;
+  word-break: break-all;
+}

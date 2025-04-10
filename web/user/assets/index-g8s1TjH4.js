@@ -1,0 +1,1 @@
+import{_ as o,c as t,a as c,r as n,o as r}from"./main-BTTZAJTD.js";const s={},a={class:"layout-container"};function _(i,d){const e=n("router-view");return r(),t("div",a,[c(e)])}const f=o(s,[["render",_]]);export{f as default};

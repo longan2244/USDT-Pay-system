@@ -1,0 +1,48 @@
+.custom-message {
+  --el-message-bg-color: #1a1a1a !important;
+  --el-message-border-color: #333 !important;
+  --el-message-padding: 12px 24px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.custom-message .el-message__content {
+  color: #fff !important;
+  font-size: 14px !important;
+}
+
+.custom-message .el-message__closeBtn {
+  color: #999 !important;
+}
+
+.custom-message-success {
+  --el-message-text-color: #67c23a !important;
+  border-left: 4px solid #67c23a !important;
+}
+
+.custom-message-warning {
+  --el-message-text-color: #e6a23c !important;
+  border-left: 4px solid #e6a23c !important;
+}
+
+.custom-message-error {
+  --el-message-text-color: #f56c6c !important;
+  border-left: 4px solid #f56c6c !important;
+}
+
+.custom-message-info {
+  --el-message-text-color: #909399 !important;
+  border-left: 4px solid #909399 !important;
+}
+
+.el-message-fade-enter-from,
+.el-message-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.el-message-fade-enter-active,
+.el-message-fade-leave-active {
+  transition: opacity 0.3s, transform 0.3s;
+}

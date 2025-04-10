@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USDT收款系统</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div id="app">
+    <div class="app-container">
+      <!-- 加载中 -->
+      <div class="global-loading" v-if="isLoading">
+        <div class="loading-spinner"></div>
+      </div>
+      <!-- 侧边栏 -->
+      <aside class="sidebar" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+        <div class="sidebar-header">
+          <div class="logo">
+            <i class="ri-currency-line"></i>
+            <span v-if="!sidebarCollapsed">USDT收款系统</span>
+          </div>
+          <button class="toggle-sidebar" @click="toggleSidebar">
+            <i class="ri-menu-fold-line" v-if="!sidebarCollapsed"></i>
+            <i class="ri-menu-unfold-line" v-else></i>
+          </button>
+        </div>
+        <nav class="sidebar-nav">
+          <ul>
+            <!-- 只有在关键设置已配置时才显示这些菜单项 -->
+            <li v-if="!criticalSettingsMissing" :class="{ active: currentPage === 'dashboard' }">
+              <a href="#" @click.prevent="changePage('dashboard')">
+                <i class="ri-dashboard-line"></i>
+                <span v-if="!sidebarCollapsed">仪表盘</span>
+              </a>
+            </li>
+            <li v-if="!criticalSettingsMissing" :class="{ active: currentPage === 'orders' }">
+              <a href="#" @click.prevent="changePage('orders')">
+                <i class="ri-file-list-3-line"></i>
+                <span v-if="!sidebarCollapsed">订单管理</span>
+              </a>
+            </li>
+            <li v-if="!criticalSettingsMissing" :class="{ active: currentPage === 'products' }">
+              <a href="#" @click.prevent="changePage('products')">
+                <i class="ri-shopping-bag-line"></i>
+                <span v-if="!sidebarCollapsed">商品管理</span>
+              </a>
+            </li>
+            <li v-if="!criticalSettingsMissing" :class="{ active: currentPage === 'cardkeys' }">
+              <a href="#" @click.prevent="changePage('cardkeys')">
+                <i class="ri-key-line"></i>
+                <span v-if="!sidebarCollapsed">卡密管理</span>
+              </a>
+            </li>
+            <!-- 设置菜单项始终显示 -->
+            <li :class="{ active: currentPage === 'settings', 'critical-settings': criticalSettingsMissing }">
+              <a href="#" @click.prevent="changePage('settings')">
+                <i class="ri-settings-line"></i>
+                <span v-if="!sidebarCollapsed">系统设置</span>
+                <span v-if="criticalSettingsMissing && !sidebarCollapsed" class="settings-warning">
+                  <i class="ri-error-warning-line"></i>
+                </span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <div class="sidebar-footer">
+          <a href="#" @click.prevent="logout">
+            <i class="ri-logout-box-line"></i>
+            <span v-if="!sidebarCollapsed">退出登录</span>
+          </a>
+        </div>
+      </aside>
+      <!-- 在app-container内部，sidebar后面添加 -->
+      <div class="sidebar-overlay" @click="closeSidebar"></div>
+      <!-- 主内容区 -->
+      <main class="main-content">
+        <header class="header">
+          <div class="header-left">
+            <button class="mobile-menu-toggle mobile-menu-toggle" @click="toggleMobileMenu">
+              <i class="ri-menu-line"></i>
+            </button>
+            <h1 class="page-title">{{ pageTitle }}</h1>
+          </div>
+          <div class="header-right">
+            <div class="search-box">
+              <i class="ri-search-line"></i>
+              <input type="text" placeholder="搜索..." v-model.trim="searchQuery">
+            </div>
+            <div class="user-menu">
+              <div class="user-avatar">
+                <i class="ri-user-line"></i>
+              </div>
+              <span class="user-name">管理员</span>
+            </div>
+          </div>
+        </header>
+
+        <!-- 仪表盘页面 -->
+        <div v-if="currentPage === 'dashboard'" class="dashboard-page">
+          <div class="stats-cards">
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="ri-shopping-cart-line"></i>
+              </div>
+              <div class="stat-content">
+                <h3>总订单数</h3>
+                <p class="stat-value">{{ dashboardData.summary?.totalOrders || 0 }}</p>
+                <p class="stat-desc">全部订单总数</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="ri-check-line"></i>
+              </div>
+              <div class="stat-content">
+                <h3>已完成订单</h3>
+                <p class="stat-value">{{ dashboardData.summary?.completedOrders || 0 }}</p>
+                <p class="stat-desc">成功支付的订单</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="ri-time-line"></i>
+              </div>
+              <div class="stat-content">
+                <h3>待处理订单</h3>
+                <p class="stat-value">{{ dashboardData.summary?.pendingOrders || 0 }}</p>
+                <p class="stat-desc">等待支付的订单</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="ri-money-dollar-circle-line"></i>
+              </div>
+              <div class="stat-content">
+                <h3>总收入</h3>
+                <p class="stat-value">{{ dashboardData.summary?.totalRevenue || 0 }} USDT</p>
+                <p class="stat-desc">所有完成订单的总金额</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-row">
+            <div class="dashboard-card sales-trend">
+              <div class="card-header">
+                <h2>销售趋势</h2>
+                <div class="card-actions">
+                  <button class="btn-icon" @click="refreshDashboard"><i class="ri-refresh-line"></i></button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div v-if="loading.dashboard" class="loading-state">
+                  <i class="ri-loader-4-line"></i>
+                  <p>加载中...</p>
+                </div>
+                <div v-else-if="!hasSalesTrendData" class="empty-state">
+                  <i class="ri-line-chart-line"></i>
+                  <p>暂无销售趋势数据</p>
+                </div>
+                <div v-else class="chart-container">
+                  <canvas id="salesChart" ref="salesChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="dashboard-card product-stats">
+              <div class="card-header">
+                <h2>商品销售情况</h2>
+                <div class="card-actions">
+                  <button class="btn-icon" @click="refreshDashboard"><i class="ri-refresh-line"></i></button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div v-if="loading.dashboard" class="loading-state">
+                  <i class="ri-loader-4-line"></i>
+                  <p>加载中...</p>
+                </div>
+                <div v-else-if="!hasProductSalesData" class="empty-state">
+                  <i class="ri-shopping-bag-line"></i>
+                  <p>暂无商品销售数据</p>
+                </div>
+                <div v-else class="product-list">
+                  <div v-for="product in dashboardData.productSales" :key="product.id" class="product-item">
+                    <div class="product-info">
+                      <h3>{{ product.name }}</h3>
+                      <div class="product-meta">
+                        <span class="product-sold">已售: {{
+                          product.soldCount
+                          }}</span>
+                        <!-- <span class="product-available" :style="product.availableCount<=5 ? 'color:#b14aed':'' ">可用: {{
+                          product.availableCount }}</span> -->
+                        <span class="product-available"
+                          :class="product.availableCount <= 5 ? 'status-badge status-danger' : ''">
+                          可用: {{ product.availableCount }}
+                      </div>
+                    </div>
+                    <div class="product-progress">
+                      <div class="progress-bar">
+                        <div class="progress"
+                          :style="{ width: calculateProgress(product.soldCount, product.soldCount + product.availableCount) + '%' }">
+                        </div>
+                      </div>
+                      <span class="progress-text">{{ calculateProgress(product.soldCount, product.soldCount +
+                        product.availableCount) }}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-card recent-orders">
+            <div class="card-header">
+              <h2>最近订单</h2>
+              <div class="card-actions">
+                <button class="btn-icon" @click="refreshDashboard"><i class="ri-refresh-line"></i></button>
+                <button class="btn-primary" @click="changePage('orders')">查看全部</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div v-if="loading.dashboard" class="loading-state">
+                <i class="ri-loader-4-line"></i>
+                <p>加载中...</p>
+              </div>
+              <div v-else-if="!hasRecentOrdersData" class="empty-state">
+                <i class="ri-file-list-3-line"></i>
+                <p>暂无订单数据</p>
+              </div>
+              <div v-else class="table-responsive">
+                <div class="data-table">
+                  <div class="table-header">
+                    <div class="table-cell">订单ID</div>
+                    <div class="table-cell">商品</div>
+                    <div class="table-cell">金额</div>
+                    <div class="table-cell">状态</div>
+                    <div class="table-cell">创建时间</div>
+                  </div>
+                  <div v-for="order in dashboardData.recentOrders" :key="order.id" class="table-row">
+                    <div class="table-cell order-id">{{ order.id.substring(0, 8) }}...</div>
+                    <div class="table-cell">{{ order.productName }}</div>
+                    <div class="table-cell">{{ order.amount }} USDT</div>
+                    <div class="table-cell">
+                      <span class="status-badge" :class="getStatusClass(order.status)">
+                        {{ getStatusText(order.status) }}
+                      </span>
+                    </div>
+                    <div class="table-cell">{{ formatDate(order.createdAt) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 订单管理页面 -->
+        <div v-if="currentPage === 'orders'" class="orders-page">
+          <div class="page-header">
+            <h2>订单管理</h2>
+            <div class="header-actions">
+              <button class="btn-primary" @click="refreshOrders">
+                <i class="ri-refresh-line"></i> 刷新
+              </button>
+            </div>
+          </div>
+
+          <!-- 订单过滤条件 -->
+          <div class="filter-card">
+            <div class="filter-header">
+              <h3>过滤条件</h3>
+              <button class="btn-text" @click="resetOrderFilters">重置</button>
+            </div>
+            <div class="filter-body">
+              <div class="filter-row">
+                <div class="filter-item">
+                  <label>订单状态</label>
+                  <select v-model.trim="orderFilters.status" class="select-input">
+                    <option value="all">全部订单</option>
+                    <option value="pending">待支付</option>
+                    <option value="processing">处理中</option>
+                    <option value="completed">已完成</option>
+                  </select>
+                </div>
+                <div class="filter-item">
+                  <label>商品</label>
+                  <select v-model.trim="orderFilters.productId" class="select-input">
+                    <option value="">全部商品</option>
+                    <option v-for="product in products" :key="product.id" :value="product.id">
+                      {{ product.name }}
+                    </option>
+                  </select>
+                </div>
+                <div class="filter-item">
+                  <label>搜索</label>
+                  <input type="text" v-model.trim="orderFilters.search" class="form-input"
+                    placeholder="订单ID/商品名称/联系方式/付款地址">
+                </div>
+              </div>
+              <div class="filter-row">
+                <div class="filter-item">
+                  <label>开始日期</label>
+                  <input type="date" v-model.trim="orderFilters.startDate" class="form-input">
+                </div>
+                <div class="filter-item">
+                  <label>结束日期</label>
+                  <input type="date" v-model.trim="orderFilters.endDate" class="form-input">
+                </div>
+                <div class="filter-item filter-actions">
+                  <button class="btn-primary" @click="applyOrderFilters"> <i class="ri-search-line"></i> 搜索</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="data-card">
+            <div class="table-responsive">
+              <div class="data-table">
+                <div class="table-header">
+                  <div class="table-cell">订单ID</div>
+                  <div class="table-cell">商品</div>
+                  <div class="table-cell">金额</div>
+                  <div class="table-cell">状态</div>
+                  <div class="table-cell">创建时间</div>
+                  <div class="table-cell">操作</div>
+                </div>
+                <div v-for="order in filteredOrders" :key="order.id" class="table-row">
+                  <div class="table-cell order-id">{{ order.id.substring(0, 8) }}...</div>
+                  <div class="table-cell">{{ formatOrderProducts(order) }}</div>
+                  <div class="table-cell">{{ order.amount }} USDT</div>
+                  <div class="table-cell">
+                    <span class="status-badge" :class="getStatusClass(order.status)">
+                      {{ getStatusText(order.status) }}
+                    </span>
+                  </div>
+                  <div class="table-cell">{{ formatDate(order.createdAt) }}</div>
+                  <div class="table-cell">
+                    <button class="btn-icon" @click="viewOrderDetails(order)">
+                      <i class="ri-eye-line"></i>
+                    </button>
+                    <button v-if="order.status === 'pending'" class="btn-icon" @click="confirmOrderPayment(order)">
+                      <i class="ri-check-line"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-if="filteredOrders.length === 0" class="empty-state">
+              <i class="ri-file-list-3-line"></i>
+              <p>没有找到订单</p>
+            </div>
+
+            <!-- 分页控件 -->
+            <div class="pagination" v-if="orderPagination.totalPages > 1">
+              <button class="pagination-btn" @click="goToOrderPage(1)" :disabled="orderPagination.page === 1">
+                <i class="ri-arrow-left-double-line"></i>
+              </button>
+              <button class="pagination-btn" @click="goToOrderPage(orderPagination.page - 1)"
+                :disabled="orderPagination.page === 1">
+                <i class="ri-arrow-left-s-line"></i>
+              </button>
+
+              <div class="pagination-info">
+                {{ orderPagination.page }} / {{ orderPagination.totalPages }}
+                (共 {{ orderPagination.totalItems }} 条)
+              </div>
+
+              <button class="pagination-btn" @click="goToOrderPage(orderPagination.page + 1)"
+                :disabled="orderPagination.page === orderPagination.totalPages">
+                <i class="ri-arrow-right-s-line"></i>
+              </button>
+              <button class="pagination-btn" @click="goToOrderPage(orderPagination.totalPages)"
+                :disabled="orderPagination.page === orderPagination.totalPages">
+                <i class="ri-arrow-right-double-line"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 商品管理页面 -->
+        <div v-if="currentPage === 'products'" class="products-page">
+          <div class="page-header">
+            <h2>商品管理</h2>
+            <div class="header-actions">
+              <button class="btn-primary" @click="showAddProductModal">
+                <i class="ri-add-line"></i> 添加商品
+              </button>
+              <button class="btn-secondary" @click="refreshProducts">
+                <i class="ri-refresh-line"></i> 刷新
+              </button>
+            </div>
+          </div>
+
+          <!-- 商品过滤条件 -->
+          <div class="filter-card">
+            <div class="filter-header">
+              <h3>过滤条件</h3>
+              <button class="btn-text" @click="resetProductFilters">重置</button>
+            </div>
+            <div class="filter-body">
+              <div class="filter-row">
+                <div class="filter-item">
+                  <label>商品状态</label>
+                  <select v-model.trim="productFilters.status" class="select-input">
+                    <option value="all">全部商品</option>
+                    <option value="active">上架中</option>
+                    <option value="deleted">已下架</option>
+                  </select>
+                </div>
+                <div class="filter-item">
+                  <label>最低价格</label>
+                  <input type="number" v-model.trim="productFilters.minPrice" class="form-input" placeholder="最低价格">
+                </div>
+                <div class="filter-item">
+                  <label>最高价格</label>
+                  <input type="number" v-model.trim="productFilters.maxPrice" class="form-input" placeholder="最高价格">
+                </div>
+              </div>
+              <div class="filter-row">
+                <div class="filter-item">
+                  <label>搜索</label>
+                  <input type="text" v-model.trim="productFilters.search" class="form-input" placeholder="商品名称/描述">
+                </div>
+                <div class="filter-item filter-actions">
+                  <button class="btn-primary" @click="applyProductFilters">
+                    <i class="ri-search-line"></i> 搜索
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="data-card">
+            <div class="table-responsive">
+              <div class="data-table">
+                <div class="table-header">
+                  <div class="table-cell">ID</div>
+                  <div class="table-cell">商品名称</div>
+                  <div class="table-cell">价格</div>
+                  <div class="table-cell">已售</div>
+                  <div class="table-cell">可用卡密</div>
+                  <div class="table-cell">状态</div>
+                  <div class="table-cell">操作</div>
+                </div>
+                <div v-for="product in products" :key="product.id" class="table-row">
+                  <div class="table-cell">{{ product.id }}</div>
+                  <div class="table-cell">{{ product.name }}</div>
+                  <div class="table-cell">{{ product.price }} USDT</div>
+                  <div class="table-cell">{{ product.soldCount || 0 }}</div>
+                  <div class="table-cell">{{ product.availableCount || 0 }}</div>
+                  <div class="table-cell">
+                    <span class="status-badge"
+                      :class="product.status === 'active' ? 'status-success' : 'status-danger'">
+                      {{ product.status === 'active' ? '上架中' : '已下架' }}
+                    </span>
+                  </div>
+                  <div class="table-cell">
+                    <button class="btn-icon" @click="editProduct(product)">
+                      <i class="ri-edit-line"></i>
+                    </button>
+                    <button class="btn-icon" @click="toggleProductStatus(product)">
+                      <i :class="product.status === 'active' ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+                    </button>
+                    <button class="btn-icon" @click="addCardKeys(product)">
+                      <i class="ri-key-line"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-if="products.length === 0" class="empty-state">
+              <i class="ri-shopping-bag-line"></i>
+              <p>没有找到商品</p>
+            </div>
+
+            <!-- 分页控件 -->
+            <div class="pagination" v-if="productPagination.totalPages > 1">
+              <button class="pagination-btn" @click="goToProductPage(1)" :disabled="productPagination.page === 1">
+                <i class="ri-arrow-left-double-line"></i>
+              </button>
+              <button class="pagination-btn" @click="goToProductPage(productPagination.page - 1)"
+                :disabled="productPagination.page === 1">
+                <i class="ri-arrow-left-s-line"></i>
+              </button>
+
+              <div class="pagination-info">
+                {{ productPagination.page }} / {{ productPagination.totalPages }}
+                (共 {{ productPagination.totalItems }} 条)
+              </div>
+
+              <button class="pagination-btn" @click="goToProductPage(productPagination.page + 1)"
+                :disabled="productPagination.page === productPagination.totalPages">
+                <i class="ri-arrow-right-s-line"></i>
+              </button>
+              <button class="pagination-btn" @click="goToProductPage(productPagination.totalPages)"
+                :disabled="productPagination.page === productPagination.totalPages">
+                <i class="ri-arrow-right-double-line"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 卡密管理页面 -->
+        <div v-if="currentPage === 'cardkeys'" class="cardkeys-page">
+          <div class="page-header">
+            <h2>卡密管理</h2>
+            <div class="header-actions">
+              <button class="btn-primary" @click="showAddCardKeyModal">
+                <i class="ri-add-line"></i> 添加卡密
+              </button>
+              <button class="btn-secondary" @click="refreshCardKeys">
+                <i class="ri-refresh-line"></i> 刷新
+              </button>
+            </div>
+          </div>
+
+          <!-- 卡密过滤条件 -->
+          <div class="filter-card">
+            <div class="filter-header">
+              <h3>过滤条件</h3>
+              <button class="btn-text" @click="resetCardKeyFilters">重置</button>
+            </div>
+            <div class="filter-body">
+              <div class="filter-row">
+                <div class="filter-item">
+                  <label>卡密状态</label>
+                  <select v-model.trim="cardKeyFilters.status" class="select-input">
+                    <option value="all">全部卡密</option>
+                    <option value="available">可用卡密</option>
+                    <option value="used">已使用</option>
+                  </select>
+                </div>
+                <div class="filter-item">
+                  <label>商品</label>
+                  <select v-model.trim="cardKeyFilters.productId" class="select-input">
+                    <option value="">全部商品</option>
+                    <option v-for="product in products" :key="product.id" :value="product.id">
+                      {{ product.name }}
+                    </option>
+                  </select>
+                </div>
+                <div class="filter-item">
+                  <label>搜索</label>
+                  <input type="text" v-model.trim="cardKeyFilters.search" class="form-input" placeholder="卡密/商品名称">
+                </div>
+                <div class="filter-item filter-actions">
+                  <button class="btn-primary" @click="applyCardKeyFilters"> <i class="ri-search-line"></i> 搜索</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="data-card">
+            <div class="batch-actions" v-if="hasSelectedCardKeys">
+              <button class="btn-danger" @click="batchDeleteCardKeys">
+                <i class="ri-delete-bin-line"></i> 批量删除 ({{ selectedCardKeys.length }})
+              </button>
+            </div>
+            <div class="table-responsive">
+              <div class="data-table">
+                <div class="table-header">
+                  <!-- <div class="table-cell checkbox-cell">
+                    <input type="checkbox" @click="toggleSelectAllCardKeys" 
+                           :checked="selectedCardKeys.length > 0 && selectedCardKeys.length === cardKeys.length">
+                  </div> -->
+                  <div class="table-cell">ID</div>
+                  <div class="table-cell">卡密</div>
+                  <div class="table-cell">商品</div>
+                  <div class="table-cell">状态</div>
+                  <div class="table-cell">创建时间</div>
+                  <div class="table-cell">使用时间</div>
+                  <div class="table-cell">操作</div>
+                </div>
+                <div v-for="cardKey in filteredCardKeys" :key="cardKey.id" class="table-row">
+                  <!-- <div class="table-cell checkbox-cell">
+                    <input type="checkbox" @click="toggleSelectCardKey(cardKey)" 
+                           :checked="isCardKeySelected(cardKey)">
+                  </div> -->
+                  <div class="table-cell">{{ cardKey.id.substring(0, 8) }}...</div>
+                  <div class="table-cell card-key">{{ cardKey.key }}</div>
+                  <div class="table-cell">{{ cardKey.productName }}</div>
+                  <div class="table-cell">
+                    <span class="status-badge" :class="cardKey.orderId ? 'status-danger' : 'status-success'">
+                      {{ cardKey.orderId ? '已使用' : '可用' }}
+                    </span>
+                  </div>
+                  <div class="table-cell">{{ formatDate(cardKey.createdAt) }}</div>
+                  <div class="table-cell">{{ cardKey.usedAt ? formatDate(cardKey.usedAt) : '-' }}</div>
+                  <div class="table-cell">
+                    <button class="btn-icon" @click="deleteCardKey(cardKey)" v-if="!cardKey.orderId">
+                      <i class="ri-delete-bin-line"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-if="filteredCardKeys.length === 0" class="empty-state">
+              <i class="ri-key-line"></i>
+              <p>没有找到卡密</p>
+            </div>
+
+            <!-- 分页控件 -->
+            <div class="pagination" v-if="cardKeyPagination.totalPages > 1">
+              <button class="pagination-btn" @click="goToCardKeyPage(1)" :disabled="cardKeyPagination.page === 1">
+                <i class="ri-arrow-left-double-line"></i>
+              </button>
+              <button class="pagination-btn" @click="goToCardKeyPage(cardKeyPagination.page - 1)"
+                :disabled="cardKeyPagination.page === 1">
+                <i class="ri-arrow-left-s-line"></i>
+              </button>
+
+              <div class="pagination-info">
+                {{ cardKeyPagination.page }} / {{ cardKeyPagination.totalPages }}
+                (共 {{ cardKeyPagination.totalItems }} 条)
+              </div>
+
+              <button class="pagination-btn" @click="goToCardKeyPage(cardKeyPagination.page + 1)"
+                :disabled="cardKeyPagination.page === cardKeyPagination.totalPages">
+                <i class="ri-arrow-right-s-line"></i>
+              </button>
+              <button class="pagination-btn" @click="goToCardKeyPage(cardKeyPagination.totalPages)"
+                :disabled="cardKeyPagination.page === cardKeyPagination.totalPages">
+                <i class="ri-arrow-right-double-line"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 系统设置页面 -->
+        <div v-if="currentPage === 'settings'" class="settings-page">
+          <div class="page-header">
+            <h2>系统设置</h2>
+          </div>
+
+          <div class="settings-card">
+            <!-- 服务器配置 -->
+            <div class="settings-section">
+              <h3>服务器配置</h3>
+              <div class="form-group">
+                <label>服务器端口</label>
+                <input type="number" v-model.trim="settings.port" class="form-input" placeholder="服务器端口">
+                <small class="form-hint">修改后需要重启服务器生效</small>
+              </div>
+              <!-- <div class="form-group">
+                <label>JWT密钥</label>
+                <div class="input-with-button">
+                  <input :type="showPassword ? 'text' : 'password'" v-model.trim="settings.jwtSecret" class="form-input"
+                    placeholder="JWT密钥">
+                  <button class="btn-icon" @click="showPassword = !showPassword">
+                    <i :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+                  </button>
+                </div>
+                <small class="form-hint">用于生成和验证JWT令牌</small>
+              </div> -->
+            </div>
+
+            <!-- 管理员配置 -->
+            <div class="settings-section">
+              <h3>管理员配置</h3>
+              <div class="form-group">
+                <label>管理员密码</label>
+                <div class="input-with-button">
+                  <input :type="showPassword ? 'text' : 'password'" v-model.trim="settings.adminKey" class="form-input"
+                    placeholder="管理员密码">
+                  <button class="btn-icon" @click="showPassword = !showPassword">
+                    <i :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tron配置 -->
+            <div class="settings-section">
+              <h3>Tron配置</h3>
+              <div class="form-group">
+                <label>收款钱包地址 TRC20</label>
+                <input type="text" v-model.trim="settings.walletAddress" class="form-input usdtinput"
+                  placeholder="USDT钱包地址">
+              </div>
+              <div class="form-group">
+                <label>API Key <small class="form-hint"><a href="https://www.trongrid.io/"
+                      target="_blank">前往申请</a></small></label>
+                <input type="text" v-model.trim="settings.apiKey" class="form-input apikeyinput"
+                  placeholder="TRON Grid API Key">
+              </div>
+              <div class="form-group">
+                <label>节点地址<small class="form-hint">不懂不要乱改</small></label>
+                <input type="text" v-model.trim="settings.fullHost" class="form-input" placeholder="TRON节点地址">
+              </div>
+              <div class="form-group">
+                <label>合约地址<small class="form-hint">不懂不要乱改</small></label>
+                <input type="text" v-model.trim="settings.contractAddress" class="form-input" placeholder="USDT合约地址">
+              </div>
+              <!-- <div class="form-group">
+                <label>收款钱包私钥</label>
+                <div class="input-with-button">
+                  <input :type="showPrivateKey ? 'text' : 'password'" v-model.trim="settings.privateKey"
+                    class="form-input" placeholder="钱包私钥">
+                  <button class="btn-icon" @click="showPrivateKey = !showPrivateKey">
+                    <i :class="showPrivateKey ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+                  </button>
+                </div>
+                <small class="form-hint">仅在需要自动转账时使用</small>
+              </div> -->
+            </div>
+
+            <!-- 订单配置 -->
+            <div class="settings-section">
+              <h3>订单配置</h3>
+              <!-- <div class="form-group">
+                <label>轮询时间(秒)</label>
+                <input type="number" v-model.trim="settings.pollingTime" class="form-input" placeholder="轮询时间">
+                <small class="form-hint">系统检查新交易的间隔时间</small>
+              </div> -->
+              <div class="form-group">
+                <label>订单过期时间(分钟)</label>
+                <input type="number" v-model.trim="settings.expirationTime" class="form-input" placeholder="订单过期时间">
+                <small class="form-hint">订单创建后的有效时间</small>
+              </div>
+              <!-- <div class="form-group">
+                <label>交易确认数</label>
+                <input type="number" v-model.trim="settings.requiredConfirmations" class="form-input" placeholder="交易确认数">
+                <small class="form-hint">TRON网络通常建议19个确认</small>
+              </div>
+              <div class="form-group">
+                <label>交易检查时间窗口(分钟)</label>
+                <input type="number" v-model.trim="settings.checkTimeWindow" class="form-input" placeholder="交易检查时间窗口">
+                <small class="form-hint">系统将检查此时间窗口内的交易，默认60分钟</small>
+              </div>
+              <div class="form-group">
+                <label>随机小数最小值</label>
+                <input type="number" step="0.01" v-model.trim="settings.randomDecimalMin" class="form-input" placeholder="随机小数最小值">
+                <small class="form-hint">订单金额随机小数部分的最小值</small>
+              </div>
+              <div class="form-group">
+                <label>随机小数最大值</label>
+                <input type="number" step="0.01" v-model.trim="settings.randomDecimalMax" class="form-input" placeholder="随机小数最大值">
+                <small class="form-hint">订单金额随机小数部分的最大值</small>
+              </div>
+              <div class="form-group">
+                <label>每设备最大待处理订单数</label>
+                <input type="number" v-model.trim="settings.maxPendingOrdersPerDevice" class="form-input" placeholder="每设备最大待处理订单数">
+                <small class="form-hint">每个设备允许的最大待处理订单数</small>
+              </div>
+              <div class="form-group">
+                <label>订单创建冷却时间(分钟)</label>
+                <input type="number" v-model.trim="settings.orderCreationCooldown" class="form-input" placeholder="订单创建冷却时间">
+                <small class="form-hint">限制用户创建订单的频率</small>
+              </div>
+              <div class="form-group">
+                <label>冷却期内最大订单数</label>
+                <input type="number" v-model.trim="settings.maxOrdersInCooldownPeriod" class="form-input" placeholder="冷却期内最大订单数">
+                <small class="form-hint">冷却期内允许创建的最大订单数</small>
+              </div> -->
+            </div>
+
+            <!-- 数据保存配置 -->
+            <div class="settings-section">
+              <h3>数据保存配置</h3>
+              <div class="form-group">
+                <label>数据保存间隔(分钟)</label>
+                <input type="number" v-model.trim="settings.dataSaveInterval" class="form-input" placeholder="数据保存间隔">
+                <small class="form-hint">系统自动保存数据的时间间隔</small>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-primary" @click="saveSettings">保存设置</button>
+              <button class="btn-secondary" @click="resetSettings">撤回</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 登录页面 -->
+        <div v-if="currentPage === 'login'" class="login-page">
+          <div class="login-card">
+            <div class="login-header">
+              <i class="ri-currency-line"></i>
+              <h1>USDT收款系统</h1>
+            </div>
+            <div class="login-form">
+              <div class="form-group">
+                <label>管理员登录密码</label>
+                <input type="password" v-model.trim="loginForm.adminKey" class="form-input" placeholder="请输入管理员密码">
+              </div>
+              <div class="form-actions">
+                <button class="btn-primary btn-block" @click="login">登录</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- 模态框组件 -->
+    <div class="modal" v-if="showModal">
+      <div class="modal-backdrop" @click="closeModal"></div>
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2>{{ modalTitle }}</h2>
+          <button class="btn-icon" @click="closeModal"><i class="ri-close-line"></i></button>
+        </div>
+        <div class="modal-body">
+          <!-- 添加商品表单 -->
+          <div v-if="modalType === 'addProduct'" class="modal-form">
+            <div class="form-group">
+              <label>商品名称</label>
+              <input type="text" v-model.trim="productForm.name" class="form-input" placeholder="请输入商品名称">
+            </div>
+            <div class="form-group">
+              <label>价格 (USDT)</label>
+              <input type="number" v-model.trim="productForm.price" class="form-input" placeholder="请输入价格">
+            </div>
+            <div class="form-group">
+              <label>描述</label>
+              <textarea v-model.trim="productForm.description" class="form-textarea" placeholder="请输入商品描述"></textarea>
+            </div>
+          </div>
+
+          <!-- 编辑商品表单 -->
+          <div v-if="modalType === 'editProduct'" class="modal-form">
+            <div class="form-group">
+              <label>商品名称</label>
+              <input type="text" v-model.trim="productForm.name" class="form-input" placeholder="请输入商品名称">
+            </div>
+            <div class="form-group">
+              <label>价格 (USDT)</label>
+              <input type="number" v-model.trim="productForm.price" class="form-input" placeholder="请输入价格">
+            </div>
+            <div class="form-group">
+              <label>描述</label>
+              <textarea v-model.trim="productForm.description" class="form-textarea" placeholder="请输入商品描述"></textarea>
+            </div>
+            <div class="form-group">
+              <label>状态</label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input type="radio" v-model.trim="productForm.status" value="active">
+                  <span>上架</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" v-model.trim="productForm.status" value="deleted">
+                  <span>下架</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 添加卡密表单 -->
+          <div v-if="modalType === 'addCardKey'" class="modal-form">
+            <div class="form-group">
+              <label>选择商品</label>
+              <select v-model.trim="cardKeyForm.productId" class="form-input">
+                <option v-for="product in activeProducts" :key="product.id" :value="product.id">
+                  {{ product.name }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>分割方式</label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input type="radio" v-model="cardKeyForm.useDelimiter" :value="false">
+                  <span>换行分割</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" v-model="cardKeyForm.useDelimiter" :value="true">
+                  <span>自定义分隔符</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-group" v-if="cardKeyForm.useDelimiter">
+              <label>分隔符</label>
+              <input type="text" v-model.trim="cardKeyForm.delimiter" class="form-input" placeholder="请输入分隔符，默认为#">
+            </div>
+            <div class="form-group">
+              <label>去重</label>
+              <div class="checkbox-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" v-model="cardKeyForm.removeDuplicates">
+                  <span>自动去除重复卡密</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>卡密</label>
+              <textarea v-model.trim="cardKeyForm.keys" class="form-textarea" :placeholder="cardKeyForm.useDelimiter ? 
+                  `请输入卡密，使用 ${cardKeyForm.delimiter || '#'} 分割多个卡密` : 
+                  '请输入卡密，多个卡密请换行输入'"></textarea>
+            </div>
+            <div class="form-actions">
+              <button class="btn-secondary" @click="previewCardKeysSplit">预览分割结果</button>
+            </div>
+          </div>
+
+          <!-- 卡密预览 -->
+          <div v-if="modalType === 'previewCardKeys'" class="modal-form">
+            <div class="preview-header">
+              <h3>卡密预览 (共 {{ previewCardKeys.length }} 个)</h3>
+            </div>
+            <div class="preview-list">
+              <div v-if="previewCardKeys.length === 0" class="empty-preview">
+                <p>没有有效的卡密</p>
+              </div>
+              <div v-else class="preview-items">
+                <div v-for="(key, index) in previewCardKeys" :key="index" class="preview-item">
+                  <span>{{ index + 1 }}. {{ key }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 订单详情 -->
+          <div v-if="modalType === 'orderDetails'" class="order-details">
+            <div class="detail-group">
+              <span class="detail-label">订单ID:</span>
+              <span class="detail-value">{{ selectedOrder.id }}</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">商品:</span>
+              <span class="detail-value">{{ formatOrderProducts(selectedOrder) }}</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">金额:</span>
+              <span class="detail-value">{{ selectedOrder.amount }} USDT</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">状态:</span>
+              <span class="detail-value status-badge" :class="getStatusClass(selectedOrder.status)">
+                {{ getStatusText(selectedOrder.status) }}
+              </span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">创建时间:</span>
+              <span class="detail-value">{{ formatDate(selectedOrder.createdAt) }}</span>
+            </div>
+            <div class="detail-group" v-if="selectedOrder.txHash">
+              <span class="detail-label" style="white-space: nowrap;">交易哈希:</span>
+              <span class="detail-value">{{ selectedOrder.txHash }}</span>
+            </div>
+            <div class="detail-group" v-if="selectedOrder.txHash">
+              <span class="detail-label">付款地址:</span>
+              <span class="detail-value">{{ selectedOrder.paymentInfo.from }}</span>
+            </div>
+            <div class="detail-group" v-if="selectedOrder.cardKey">
+              <span class="detail-label">卡密:</span>
+              <span class="detail-value">{{ selectedOrder.cardKey }}</span>
+            </div>
+            <div v-if="selectedOrder.cardKeys && selectedOrder.cardKeys.length > 0">
+              <h3>卡密列表</h3>
+              <div class="card-keys-list">
+                <div v-for="(card, index) in selectedOrder.cardKeys" :key="index" class="card-key-item">
+                  <span>{{ card.productName }}: </span>
+                  <span class="card-key-value">{{ card.key }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 确认支付表单 -->
+          <div v-if="modalType === 'confirmPayment'" class="modal-form">
+            <div class="form-group">
+              <label>订单ID</label>
+              <input type="text" :value="selectedOrder.id" class="form-input" disabled>
+            </div>
+            <div class="form-group">
+              <label>金额</label>
+              <input type="text" :value="selectedOrder.amount + ' USDT'" class="form-input" disabled>
+            </div>
+            <div class="form-group">
+              <label>交易哈希</label>
+              <input type="text" v-model.trim="paymentForm.txHash" class="form-input" placeholder="请输入交易哈希">
+            </div>
+          </div>
+
+          <!-- 确认修改系统设置 -->
+          <div v-if="modalType === 'confirmSettings'" class="modal-form">
+            <div class="warning-message">
+              <i class="ri-alert-line"></i>
+              <p>您正在修改系统关键设置，这可能会影响系统的正常运行。请确认您了解所做的更改并确认继续。</p>
+            </div>
+            <div class="settings-summary">
+              <h3>即将修改的设置:</h3>
+              <!-- 服务器配置 -->
+              <div class="detail-group" v-if="settings.port !== originalSettings.port">
+                <span class="detail-label">服务器端口:</span>
+                <span class="detail-value">{{ settings.port }}</span>
+              </div>
+              <div class="detail-group" v-if="settings.jwtSecret !== originalSettings.jwtSecret">
+                <span class="detail-label">JWT密钥:</span>
+                <span class="detail-value">已修改</span>
+              </div>
+
+              <!-- 管理员配置 -->
+              <div class="detail-group" v-if="settings.adminKey !== originalSettings.adminKey">
+                <span class="detail-label">管理员密码:</span>
+                <span class="detail-value">已修改</span>
+              </div>
+
+              <!-- Tron配置 -->
+              <div class="detail-group" v-if="settings.walletAddress !== originalSettings.walletAddress">
+                <span class="detail-label">钱包地址:</span>
+                <span class="detail-value">{{ settings.walletAddress }}</span>
+              </div>
+              <div class="detail-group" v-if="settings.fullHost !== originalSettings.fullHost">
+                <span class="detail-label">节点地址:</span>
+                <span class="detail-value">{{ settings.fullHost }}</span>
+              </div>
+              <div class="detail-group" v-if="settings.privateKey !== originalSettings.privateKey">
+                <span class="detail-label">私钥:</span>
+                <span class="detail-value">已修改</span>
+              </div>
+              <div class="detail-group" v-if="settings.contractAddress !== originalSettings.contractAddress">
+                <span class="detail-label">合约地址:</span>
+                <span class="detail-value">{{ settings.contractAddress }}</span>
+              </div>
+              <div class="detail-group" v-if="settings.apiKey !== originalSettings.apiKey">
+                <span class="detail-label">API Key:</span>
+                <span class="detail-value">已修改</span>
+              </div>
+
+              <!-- 订单配置 -->
+              <div class="detail-group" v-if="settings.pollingTime !== originalSettings.pollingTime">
+                <span class="detail-label">轮询时间:</span>
+                <span class="detail-value">{{ settings.pollingTime }} 秒</span>
+              </div>
+              <div class="detail-group" v-if="settings.expirationTime !== originalSettings.expirationTime">
+                <span class="detail-label">过期时间:</span>
+                <span class="detail-value">{{ settings.expirationTime }} 分钟</span>
+              </div>
+              <div class="detail-group"
+                v-if="settings.requiredConfirmations !== originalSettings.requiredConfirmations">
+                <span class="detail-label">交易确认数:</span>
+                <span class="detail-value">{{ settings.requiredConfirmations }}</span>
+              </div>
+              <div class="detail-group" v-if="settings.checkTimeWindow !== originalSettings.checkTimeWindow">
+                <span class="detail-label">交易检查时间窗口:</span>
+                <span class="detail-value">{{ settings.checkTimeWindow }} 分钟</span>
+              </div>
+              <div class="detail-group" v-if="settings.randomDecimalMin !== originalSettings.randomDecimalMin">
+                <span class="detail-label">随机小数最小值:</span>
+                <span class="detail-value">{{ settings.randomDecimalMin }}</span>
+              </div>
+              <div class="detail-group" v-if="settings.randomDecimalMax !== originalSettings.randomDecimalMax">
+                <span class="detail-label">随机小数最大值:</span>
+                <span class="detail-value">{{ settings.randomDecimalMax }}</span>
+              </div>
+              <div class="detail-group"
+                v-if="settings.maxPendingOrdersPerDevice !== originalSettings.maxPendingOrdersPerDevice">
+                <span class="detail-label">每设备最大待处理订单数:</span>
+                <span class="detail-value">{{ settings.maxPendingOrdersPerDevice }}</span>
+              </div>
+              <div class="detail-group"
+                v-if="settings.orderCreationCooldown !== originalSettings.orderCreationCooldown">
+                <span class="detail-label">订单创建冷却时间:</span>
+                <span class="detail-value">{{ settings.orderCreationCooldown }} 分钟</span>
+              </div>
+              <div class="detail-group"
+                v-if="settings.maxOrdersInCooldownPeriod !== originalSettings.maxOrdersInCooldownPeriod">
+                <span class="detail-label">冷却期内最大订单数:</span>
+                <span class="detail-value">{{ settings.maxOrdersInCooldownPeriod }}</span>
+              </div>
+
+              <!-- 数据保存配置 -->
+              <div class="detail-group" v-if="settings.dataSaveInterval !== originalSettings.dataSaveInterval">
+                <span class="detail-label">数据保存间隔:</span>
+                <span class="detail-value">{{ settings.dataSaveInterval }} 分钟</span>
+              </div>
+
+              <div class="no-changes-message" v-if="JSON.stringify(settings) === JSON.stringify(originalSettings)">
+                <p>没有检测到设置变更</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="closeModal">取消</button>
+          <button class="btn-primary" @click="submitModal">确认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 通知组件 -->
+    <div class="notification" v-if="notification.show" :class="notification.type">
+      <div class="notification-icon">
+        <i :class="getNotificationIcon()"></i>
+      </div>
+      <div class="notification-content">
+        <h3>{{ notification.title }}</h3>
+        <p>{{ notification.message }}</p>
+      </div>
+      <button class="notification-close" @click="closeNotification">
+        <i class="ri-close-line"></i>
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>USDT支付系统</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <div class="app-container">
+      <!-- 顶部导航栏 -->
+      <header class="header">
+        <div class="header-content">
+          <h1 class="logo">USDT支付系统</h1>
+          <div class="header-actions">
+            <button class="btn-icon" @click="goToCartPage" v-if="cartItemsCount > 0">
+              <i class="ri-shopping-cart-line"></i>
+              <span class="cart-badge" v-if="cartItemsCount > 0">{{ cartItemsCount }}</span>
+            </button>
+            <button class="btn-icon" @click="toggleTheme">
+              <i class="ri-contrast-2-line"></i>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- 主内容区 -->
+      <main class="main-content">
+        <!-- 商品列表页面 -->
+        <div v-if="currentPage === 'products'" class="products-page">
+          <div class="page-header">
+            <h2>商品列表</h2>
+            <div class="search-box">
+              <i class="ri-search-line"></i>
+              <input type="text" placeholder="搜索商品..." v-model="searchQuery">
+            </div>
+          </div>
+
+          <div class="products-grid">
+            <div v-for="product in filteredProducts" :key="product.id" class="product-card" @click="viewProduct(product)">
+              <div class="product-status" v-if="product.availableCount <= 5">
+                <span class="status-badge status-warning" v-if="product.availableCount > 0">库存紧张</span>
+                <span class="status-badge status-danger" v-else>已售罄</span>
+              </div>
+              <div class="product-info">
+                <h3 class="product-name">{{ product.name }}</h3>
+                <p class="product-price">{{ product.price }} USDT</p>
+                <p class="product-desc">{{ product.description }}</p>
+                <p class="product-stock-info">库存: {{ product.availableCount }}</p>
+              </div>
+              <div class="product-action">
+                <button class="btn-primary" :disabled="product.availableCount <= 0" @click.stop="addToCartFromList(product, $event)">加入购物车</button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="filteredProducts.length === 0" class="empty-state">
+            <i class="ri-shopping-bag-line"></i>
+            <p>没有找到商品</p>
+          </div>
+        </div>
+
+        <!-- 商品详情页面 -->
+        <div v-if="currentPage === 'product-detail'" class="product-detail-page">
+          <div class="page-header">
+            <button class="btn-back" @click="goBack">
+              <i class="ri-arrow-left-line"></i>
+            </button>
+            <h2>商品详情</h2>
+          </div>
+
+          <div class="product-detail-card">
+            <h3 class="product-name">{{ selectedProduct.name }}</h3>
+            <p class="product-price">{{ selectedProduct.price }} USDT</p>
+            <p class="product-desc">{{ selectedProduct.description }}</p>
+            
+            <div class="product-stock">
+              <span class="stock-label">库存状态:</span>
+              <span class="status-badge" :class="getStockStatusClass(selectedProduct.availableCount)">
+                {{ getStockStatusText(selectedProduct.availableCount) }}
+              </span>
+            </div>
+            
+            <div class="quantity-selector">
+              <span class="quantity-label">购买数量:</span>
+              <div class="quantity-controls">
+                <button class="btn-quantity" @click="decreaseQuantity" :disabled="quantity <= 1 || selectedProduct.availableCount <= 0">
+                  <i class="ri-subtract-line"></i>
+                </button>
+                <span class="quantity-value">{{ quantity }}</span>
+                <button class="btn-quantity" @click="increaseQuantity" :disabled="quantity >= selectedProduct.availableCount || selectedProduct.availableCount <= 0">
+                  <i class="ri-add-line"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>联系方式 (用于查询订单和卡密)</label>
+              <input type="text" v-model="contactInfo" class="form-input" placeholder="QQ/微信/邮箱/手机号">
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-primary btn-block" @click="createOrder" :disabled="!contactInfo || selectedProduct.availableCount <= 0">
+                立即购买
+              </button>
+              <button class="btn-secondary btn-block" @click="addToCartFromDetail" :disabled="selectedProduct.availableCount <= 0">
+                加入购物车
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 购物车页面 -->
+        <div v-if="currentPage === 'cart'" class="cart-page">
+          <div class="page-header">
+            <button class="btn-back" @click="goBack">
+              <i class="ri-arrow-left-line"></i>
+            </button>
+            <h2>购物车</h2>
+          </div>
+
+          <div v-if="cart.length > 0" class="cart-content">
+            <div class="cart-items">
+              <div v-for="(item, index) in cart" :key="index" class="cart-item">
+                <div class="cart-item-info">
+                  <h3 class="cart-item-name">{{ item.productName }}</h3>
+                  <p class="cart-item-price">{{ item.price }} USDT</p>
+                </div>
+                <div class="cart-item-quantity">
+                  <button class="btn-quantity" @click="updateCartItemQuantity(index, -1)" :disabled="item.quantity <= 1">
+                    <i class="ri-subtract-line"></i>
+                  </button>
+                  <span class="quantity-value">{{ item.quantity }}</span>
+                  <button class="btn-quantity" @click="updateCartItemQuantity(index, 1)" :disabled="item.quantity >= item.availableCount">
+                    <i class="ri-add-line"></i>
+                  </button>
+                </div>
+                <div class="cart-item-total">
+                  <p>{{ (item.price * item.quantity).toFixed(2) }} USDT</p>
+                </div>
+                <button class="btn-remove" @click="removeFromCart(index)">
+                  <i class="ri-delete-bin-line"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="cart-summary">
+              <div class="cart-total">
+                <span>总计:</span>
+                <span class="cart-total-price">{{ cartTotal }} USDT</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>联系方式 (用于查询订单和卡密)</label>
+              <input type="text" v-model="contactInfo" class="form-input" placeholder="QQ/微信/邮箱/手机号">
+            </div>
+
+            <div class="cart-actions">
+              <button class="btn-primary btn-block" @click="createOrder" :disabled="!contactInfo">
+                结算
+              </button>
+              <button class="btn-secondary btn-block" @click="clearCart">
+                清空购物车
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="empty-state">
+            <i class="ri-shopping-cart-line"></i>
+            <p>购物车为空</p>
+            <button class="btn-primary" @click="goToProductsPage">
+              去选购商品
+            </button>
+          </div>
+        </div>
+
+        <!-- 订单确认页面 -->
+        <div v-if="currentPage === 'order-confirm'" class="order-confirm-page">
+          <div class="page-header">
+            <button class="btn-back" @click="goBack">
+              <i class="ri-arrow-left-line"></i>
+            </button>
+            <h2>确认订单</h2>
+          </div>
+
+          <div class="order-card">
+            <div class="order-info">
+              <h3>订单信息</h3>
+              <!-- 从购物车创建的订单 -->
+              <div v-if="currentOrder && currentOrder.items && currentOrder.items.length > 0">
+                <div v-for="(item, index) in currentOrder.items" :key="index" class="order-item-detail">
+                  <div class="info-group">
+                    <span class="info-label">商品:</span>
+                    <span class="info-value">{{ item.productName }}</span>
+                  </div>
+                  <div class="info-group">
+                    <span class="info-label">单价:</span>
+                    <span class="info-value">{{ item.price }} USDT</span>
+                  </div>
+                  <div class="info-group">
+                    <span class="info-label">数量:</span>
+                    <span class="info-value">{{ item.quantity }}</span>
+                  </div>
+                  <div class="info-group">
+                    <span class="info-label">小计:</span>
+                    <span class="info-value">{{ (item.price * item.quantity).toFixed(2) }} USDT</span>
+                  </div>
+                  <div class="item-divider" v-if="index < currentOrder.items.length - 1"></div>
+                </div>
+              </div>
+              <!-- 从商品详情页创建的订单 -->
+              <div v-else-if="selectedProduct">
+                <div class="info-group">
+                  <span class="info-label">商品:</span>
+                  <span class="info-value">{{ selectedProduct.name }}</span>
+                </div>
+                <div class="info-group">
+                  <span class="info-label">单价:</span>
+                  <span class="info-value">{{ selectedProduct.price }} USDT</span>
+                </div>
+                <div class="info-group">
+                  <span class="info-label">数量:</span>
+                  <span class="info-value">{{ quantity }}</span>
+                </div>
+                <div class="info-group">
+                  <span class="info-label">总价:</span>
+                  <span class="info-value">{{ (selectedProduct.price * quantity).toFixed(2) }} USDT</span>
+                </div>
+              </div>
+              <div class="info-group">
+                <span class="info-label">联系方式:</span>
+                <span class="info-value">{{ contactInfo }}</span>
+              </div>
+            </div>
+
+            <div class="payment-info" v-if="currentOrder">
+              <h3>支付信息</h3>
+              <div class="info-group">
+                <span class="info-label">订单ID:</span>
+                <span class="info-value order-id">{{ currentOrder.orderId }}</span>
+                <button class="btn-copy" @click="copyToClipboard(currentOrder.orderId)">
+                  <i class="ri-file-copy-line"></i>
+                </button>
+              </div>
+              <div class="info-group">
+                <span class="info-label">支付地址:</span>
+                <span class="info-value payment-address">{{ currentOrder.paymentAddress }}</span>
+                <button class="btn-copy" @click="copyToClipboard(currentOrder.paymentAddress)">
+                  <i class="ri-file-copy-line"></i>
+                </button>
+              </div>
+              <div class="info-group">
+                <span class="info-label">支付金额:</span>
+                <span class="info-value">{{ currentOrder.amount }} USDT</span>
+                <button class="btn-copy" @click="copyToClipboard(currentOrder.amount)">
+                  <i class="ri-file-copy-line"></i>
+                </button>
+              </div>
+              <div class="info-group">
+                <span class="info-label">订单状态:</span>
+                <span class="info-value status-badge" :class="getOrderStatusClass(currentOrder.status)">
+                  {{ getOrderStatusText(currentOrder.status) }}
+                </span>
+              </div>
+              <div class="info-group" v-if="orderExpiration">
+                <span class="info-label">过期时间:</span>
+                <span class="info-value">{{ orderExpiration }}</span>
+              </div>
+            </div>
+
+            <div class="payment-qr" v-if="currentOrder && currentOrder.status === 'pending'">
+              <div class="qr-code" id="qrcode"></div>
+              <p class="qr-tip">请使用支持USDT-TRC20的钱包扫码支付</p>
+            </div>
+
+            <div class="payment-actions" v-if="currentOrder">
+              <button class="btn-primary btn-block" @click="checkOrderStatus">
+                <i class="ri-refresh-line"></i> 刷新订单状态
+              </button>
+              <button class="btn-secondary btn-block" @click="goToOrdersPage">
+                <i class="ri-file-list-3-line"></i> 查看我的订单
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 订单完成页面 -->
+        <div v-if="currentPage === 'order-complete'" class="order-complete-page">
+          <div class="page-header">
+            <button class="btn-back" @click="goToProductsPage">
+              <i class="ri-arrow-left-line"></i>
+            </button>
+            <h2>订单完成</h2>
+          </div>
+
+          <div class="order-card">
+            <div class="order-success">
+              <i class="ri-check-line success-icon"></i>
+              <h3>支付成功</h3>
+              <p>您的订单已完成，卡密信息如下</p>
+            </div>
+
+            <div class="card-key-info">
+              <h3>卡密信息</h3>
+              <div class="card-key-container">
+                <div class="card-key">{{ currentOrder.cardKey }}</div>
+                <button class="btn-copy" @click="copyToClipboard(currentOrder.cardKey)">
+                  <i class="ri-file-copy-line"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="order-actions">
+              <button class="btn-primary btn-block" @click="goToProductsPage">
+                继续购买
+              </button>
+              <button class="btn-secondary btn-block" @click="goToOrdersPage">
+                查看我的订单
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 我的订单页面 -->
+        <div v-if="currentPage === 'orders'" class="orders-page">
+          <div class="page-header">
+            <button class="btn-back" @click="goToProductsPage">
+              <i class="ri-arrow-left-line"></i>
+            </button>
+            <h2>我的订单</h2>
+          </div>
+
+          <div class="search-form">
+            <div class="form-group">
+              <label>联系方式</label>
+              <input type="text" v-model="searchContactInfo" class="form-input" placeholder="输入下单时的联系方式">
+            </div>
+            <button class="btn-primary btn-block" @click="searchOrders">
+              <i class="ri-search-line"></i> 查询订单
+            </button>
+          </div>
+
+          <div class="orders-list" v-if="myOrders.length > 0">
+            <div v-for="order in myOrders" :key="order.id" class="order-item" @click="viewOrderDetail(order)">
+              <div class="order-header">
+                <span class="order-id">订单ID: {{ order.id.substring(0, 8) }}...</span>
+                <span class="status-badge" :class="getOrderStatusClass(order.status)">
+                  {{ getOrderStatusText(order.status) }}
+                </span>
+              </div>
+              <div class="order-content">
+                <div class="order-info-item">
+                  <span class="info-label">商品:</span>
+                  <span class="info-value">{{ order.productName || '多商品' }}</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">金额:</span>
+                  <span class="info-value">{{ order.amount }} USDT</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">创建时间:</span>
+                  <span class="info-value">{{ formatDate(order.createdAt) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="searchContactInfo && myOrders.length === 0" class="empty-state">
+            <i class="ri-file-list-3-line"></i>
+            <p>没有找到订单</p>
+          </div>
+        </div>
+
+        <!-- 订单详情页面 -->
+        <div v-if="currentPage === 'order-detail'" class="order-detail-page">
+          <div class="page-header">
+            <button class="btn-back" @click="goToOrdersPage">
+              <i class="ri-arrow-left-line"></i>
+            </button>
+            <h2>订单详情</h2>
+          </div>
+
+          <div class="order-card">
+            <div class="order-info">
+              <h3>订单信息</h3>
+              <div class="info-group">
+                <span class="info-label">订单ID:</span>
+                <span class="info-value order-id">{{ selectedOrder.id }}</span>
+                <button class="btn-copy" @click="copyToClipboard(selectedOrder.id)">
+                  <i class="ri-file-copy-line"></i>
+                </button>
+              </div>
+              <div class="info-group">
+                <span class="info-label">商品:</span>
+                <span class="info-value">{{ selectedOrder.productName || '多商品' }}</span>
+              </div>
+              <div class="info-group">
+                <span class="info-label">金额:</span>
+                <span class="info-value">{{ selectedOrder.amount }} USDT</span>
+              </div>
+              <div class="info-group">
+                <span class="info-label">状态:</span>
+                <span class="info-value status-badge" :class="getOrderStatusClass(selectedOrder.status)">
+                  {{ getOrderStatusText(selectedOrder.status) }}
+                </span>
+              </div>
+              <div class="info-group">
+                <span class="info-label">创建时间:</span>
+                <span class="info-value">{{ formatDate(selectedOrder.createdAt) }}</span>
+              </div>
+              <div class="info-group" v-if="selectedOrder.txHash">
+                <span class="info-label">交易哈希:</span>
+                <span class="info-value tx-hash">{{ selectedOrder.txHash }}</span>
+              </div>
+            </div>
+
+            <div class="card-key-info" v-if="selectedOrder.status === 'completed' && selectedOrder.cardKey">
+              <h3>卡密信息</h3>
+              <div class="card-key-container">
+                <div class="card-key">{{ selectedOrder.cardKey }}</div>
+                <button class="btn-copy" @click="copyToClipboard(selectedOrder.cardKey)">
+                  <i class="ri-file-copy-line"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="card-keys-list" v-if="selectedOrder.status === 'completed' && selectedOrder.cardKeys && selectedOrder.cardKeys.length > 0">
+              <h3>卡密列表</h3>
+              <div v-for="(card, index) in selectedOrder.cardKeys" :key="index" class="card-key-item">
+                <div class="card-key-header">
+                  <span>{{ card.productName }}</span>
+                </div>
+                <div class="card-key-container">
+                  <div class="card-key">{{ card.key }}</div>
+                  <button class="btn-copy" @click="copyToClipboard(card.key)">
+                    <i class="ri-file-copy-line"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="order-actions">
+              <button class="btn-primary btn-block" @click="refreshOrderDetail">
+                <i class="ri-refresh-line"></i> 刷新订单状态
+              </button>
+              <button class="btn-secondary btn-block" @click="goToProductsPage">
+                继续购买
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 我的卡密页面 -->
+        <div v-if="currentPage === 'card-keys'" class="card-keys-page">
+          <div class="page-header">
+            <button class="btn-back" @click="goToProductsPage">
+              <i class="ri-arrow-left-line"></i>
+            </button>
+            <h2>我的卡密</h2>
+          </div>
+
+          <div class="search-form">
+            <div class="form-group">
+              <label>联系方式</label>
+              <input type="text" v-model="searchContactInfo" class="form-input" placeholder="输入下单时的联系方式">
+            </div>
+            <button class="btn-primary btn-block" @click="searchCardKeys">
+              <i class="ri-search-line"></i> 查询卡密
+            </button>
+          </div>
+
+          <div class="card-keys-list" v-if="myCardKeys.length > 0">
+            <div v-for="(card, index) in myCardKeys" :key="index" class="card-key-item">
+              <div class="card-key-header">
+                <span>{{ card.productName }}</span>
+                <span class="card-key-date">{{ formatDate(card.createdAt) }}</span>
+              </div>
+              <div class="card-key-container">
+                <div class="card-key">{{ card.key }}</div>
+                <button class="btn-copy" @click="copyToClipboard(card.key)">
+                  <i class="ri-file-copy-line"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="searchContactInfo && myCardKeys.length === 0" class="empty-state">
+            <i class="ri-key-line"></i>
+            <p>没有找到卡密</p>
+          </div>
+        </div>
+      </main>
+
+      <!-- 底部导航栏 -->
+      <nav class="bottom-nav">
+        <button class="nav-item" :class="{ active: currentPage === 'products' || currentPage === 'product-detail' }" @click="goToProductsPage">
+          <i class="ri-shopping-bag-line"></i>
+          <span>商品</span>
+        </button>
+        <button class="nav-item" :class="{ active: currentPage === 'orders' || currentPage === 'order-detail' }" @click="goToOrdersPage">
+          <i class="ri-file-list-3-line"></i>
+          <span>订单</span>
+        </button>
+        <button class="nav-item" :class="{ active: currentPage === 'card-keys' }" @click="goToCardKeysPage">
+          <i class="ri-key-line"></i>
+          <span>卡密</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- 通知组件 -->
+    <div class="notification" v-if="notification.show" :class="notification.type">
+      <div class="notification-icon">
+        <i :class="getNotificationIcon()"></i>
+      </div>
+      <div class="notification-content">
+        <h3>{{ notification.title }}</h3>
+        <p>{{ notification.message }}</p>
+      </div>
+      <button class="notification-close" @click="closeNotification">
+        <i class="ri-close-line"></i>
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <!-- 最新版本 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
