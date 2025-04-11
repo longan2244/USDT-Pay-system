@@ -59,7 +59,7 @@ const formatDate = (timestamp) => {
 // 表格列定义
 const tableHeaders = [
   { text: '订单ID', value: 'id', formatter: (value) => value.substring(0, 8) + '...' },
-  { text: '商品', value: 'productName' },
+  { text: '商品', value: 'items', formatter: (_, item) => formatOrderProducts(item) },
   { text: '金额', value: 'amount', formatter: (value) => `${value} USDT` },
   { text: '状态', value: 'status', type: 'status' },
   { text: '创建时间', value: 'createdAt', formatter: formatDate },
@@ -389,4 +389,75 @@ onMounted(() => {
   </div>
 </template>
 
-<style lang="less" scoped></style>
+<style lang="less" scoped>
+.orders-page {
+  width: 100%;
+}
+
+.data-card {
+  overflow-x: auto;
+  /* 添加水平滚动 */
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  /* 提升iOS设备上的滚动体验 */
+}
+
+/* 确保表格内容在移动设备上正确显示 */
+:deep(.data-table) {
+  min-width: 800px;
+  /* 设置最小宽度确保内容完整显示 */
+  table-layout: fixed;
+}
+
+/* 订单详情样式优化 */
+.order-details {
+  .detail-group {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+
+    .detail-label {
+      font-weight: bold;
+      min-width: 80px;
+      margin-right: 10px;
+    }
+
+    .detail-value {
+      flex: 1;
+      word-break: break-word;
+      /* 确保长文本可以换行 */
+    }
+  }
+}
+
+/* 卡密列表样式 */
+.card-keys-list {
+  margin-top: 10px;
+
+  .card-key-item {
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+
+    .card-key-value {
+      word-break: break-all;
+      /* 确保卡密值可以换行 */
+    }
+  }
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .filter-row {
+    flex-direction: column;
+
+    .filter-item {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+  }
+
+  .header-actions {
+    margin-top: 10px;
+  }
+}
+</style>

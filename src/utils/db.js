@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const config = require('../config');
-
+const archiver = require('archiver');
 // 确保数据目录存在
 const ensureDbDirExists = () => {
   if (!fs.existsSync(config.db.dir)) {
@@ -39,8 +39,55 @@ const initDb = () => {
   ensureDbDirExists();
 };
 
+//备份整个db文件夹
+const backupDb = () => {
+  const now = new Date();
+  const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
+  const backupPath = path.join(config.db.dir, `../db自动备份/db-${timestamp}.zip`);
+
+
+  // 确保备份目录存在
+  const backupDir = path.dirname(backupPath);
+  if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir, { recursive: true });
+  }
+
+  const output = fs.createWriteStream(backupPath);
+  const archive = archiver('zip', {
+    zlib: { level: 9 }
+  });
+
+  return new Promise((resolve, reject) => {
+    output.on('close', () => {
+      console.log(`备份完成: ${backupPath}`);
+      console.log(`总大小: ${archive.pointer()} bytes`);
+      resolve(backupPath);
+    });
+
+    archive.on('error', (err) => {
+      console.error('备份失败:', err);
+      reject(err);
+    });
+
+    archive.on('warning', (err) => {
+      if (err.code === 'ENOENT') {
+        console.warn('备份警告:', err);
+      } else {
+        throw err;
+      }
+    });
+
+    archive.pipe(output);
+    archive.directory(config.db.dir, false);
+    archive.finalize();
+  });
+}
+
+
+
 module.exports = {
   loadData,
   saveData,
-  initDb
+  initDb,
+  backupDb
 };

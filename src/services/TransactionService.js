@@ -93,15 +93,15 @@ class TransactionService {
   async trackTransaction(txHash) {
     try {
 
-      formatLog(
-        `
-        ##########哈希轮询信息####
-        哈希：${txHash}
-        API密钥： ${this.API_KEY}
-        fullHost： ${this.fullHost}/wallet/gettransactionbyid?value=${txHash}
-        ##########################
-        `
-      )
+      // formatLog(
+      //   `
+      //   ##########哈希轮询信息####
+      //   哈希：${txHash}
+      //   API密钥： ${this.API_KEY}
+      //   fullHost： ${this.fullHost}/wallet/gettransactionbyid?value=${txHash}
+      //   ##########################
+      //   `
+      // )
 
 
       // 使用TRON API获取交易信息
@@ -413,16 +413,16 @@ class TransactionService {
     try {
       const walletAddress = config.tron.walletAddress;
       const contractAddress = this.CONTRACT_USDT || config.tron.usdtContractAddress;
-      formatLog(
-        `
-        ##########交易轮询信息####
-        合约地址：${contractAddress}
-        钱包地址： ${walletAddress}
-        API密钥： ${this.API_KEY}
-        fullHost： ${this.fullHost}/v1/accounts/${walletAddress}/transactions/trc20
-        ##########################
-        `
-      )
+      // formatLog(
+      //   `
+      //   ##########交易轮询信息####
+      //   合约地址：${contractAddress}
+      //   钱包地址： ${walletAddress}
+      //   API密钥： ${this.API_KEY}
+      //   fullHost： ${this.fullHost}/v1/accounts/${walletAddress}/transactions/trc20
+      //   ##########################
+      //   `
+      // )
       const response = await axios.get(
         `${this.fullHost}/v1/accounts/${walletAddress}/transactions/trc20`,
         {

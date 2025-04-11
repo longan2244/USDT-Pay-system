@@ -361,4 +361,63 @@ onMounted(() => {
   </div>
 </template>
 
-<style lang="less" scoped></style>
+<style lang="less" scoped>
+.products-page {
+  width: 100%;
+}
+
+.data-card {
+  overflow-x: auto;
+  /* 添加水平滚动 */
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  /* 提升iOS设备上的滚动体验 */
+}
+
+/* 确保表格内容在移动设备上正确显示 */
+:deep(.data-table) {
+  min-width: 800px;
+  /* 设置最小宽度确保内容完整显示 */
+  table-layout: fixed;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .header-actions {
+      margin-top: 10px;
+      width: 100%;
+      display: flex;
+      gap: 10px;
+
+      button {
+        flex: 1;
+      }
+    }
+  }
+
+  .filter-row {
+    flex-direction: column;
+
+    .filter-item {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+  }
+
+  /* 模态框内容响应式调整 */
+  .modal-form {
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-input,
+    .form-textarea {
+      width: 100%;
+    }
+  }
+}
+</style>

@@ -5,7 +5,7 @@ const config = require('./config');
 const apiRoutes = require('./routes/apiRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
-const { initDb } = require('./utils/db');
+const { initDb, backupDb } = require('./utils/db');
 const orderModel = require('./models/order');
 const productModel = require('./models/product');
 const cardKeyModel = require('./models/cardKey');
@@ -50,7 +50,15 @@ setInterval(() => {
   orderModel.saveOrders();
   cardKeyModel.saveCardKeys();
   productModel.saveProducts();
-  console.log('数据已自动保存到本地文件');
 }, config.dataSave.interval);
+
+
+// 10小时备份一次
+setInterval(() => {
+  backupDb();
+  console.log('数据已自动备份到本地文件');
+}, 1000 * 60 * 60 * 10);
+
+
 
 module.exports = app;

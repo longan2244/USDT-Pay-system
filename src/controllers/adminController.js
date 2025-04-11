@@ -476,7 +476,7 @@ const getAllProducts = (req, res) => {
 
     // 分页数据
     const paginatedProducts = products.slice((page - 1) * pageSize, page * pageSize);
-
+    paginatedProducts.reverse();
     res.json({
       success: true,
       data: paginatedProducts,

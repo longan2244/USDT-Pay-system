@@ -36,10 +36,13 @@ const pagination = ref({
   totalPages: 0
 })
 
-// 模态框
-const showModal = ref(false)
-const modalType = ref('')
-const modalTitle = ref('')
+// 添加卡密模态框
+const showAddModal = ref(false)
+const addModalTitle = ref('添加卡密')
+
+// 预览卡密模态框
+const showPreviewModal = ref(false)
+const previewModalTitle = ref('卡密预览')
 
 // 卡密表单
 const cardKeyForm = ref({
@@ -52,8 +55,6 @@ const cardKeyForm = ref({
 
 // 预览卡密
 const previewCardKeys = ref([])
-const previousModalType = ref('')
-const previousModalTitle = ref('')
 
 // 加载状态
 const loading = ref(false)
@@ -76,10 +77,10 @@ const tableHeaders = [
   { text: 'ID', value: 'id', formatter: (value) => value.substring(0, 8) + '...' },
   { text: '卡密', value: 'key', style: { flex: '2' } },
   { text: '商品', value: 'productName' },
-  { 
-    text: '状态', 
-    value: 'status', 
-    type: 'status', 
+  {
+    text: '状态',
+    value: 'status',
+    type: 'status',
     formatter: (value, item) => ({
       status: item.orderId ? 'used' : 'available',
       text: item.orderId ? '已使用' : '可用'
@@ -87,13 +88,13 @@ const tableHeaders = [
   },
   { text: '创建时间', value: 'createdAt', formatter: formatDate },
   { text: '使用时间', value: 'usedAt', formatter: (value) => value ? formatDate(value) : '-' },
-  { 
-    text: '操作', 
-    value: 'actions', 
+  {
+    text: '操作',
+    value: 'actions',
     type: 'actions',
     actions: [
-      { 
-        action: 'delete', 
+      {
+        action: 'delete',
         icon: 'ri-delete-bin-line',
         condition: (item) => !item.orderId
       }
@@ -135,11 +136,9 @@ const fetchCardKeys = async () => {
 
     // 获取卡密数据
     const response = await getCardKeys(params)
- 
+
     // 由于在request.js中已经处理了响应拦截，这里直接使用返回的数据
     cardKeys.value = response.data
-    
-
 
     // 更新分页信息
     if (response.pagination) {
@@ -157,23 +156,23 @@ const fetchCardKeys = async () => {
 
 const fetchProducts = async () => {
   try {
-    const params = { 
+    const params = {
       pageSize: 100,  // 获取足够多的商品用于过滤
       status: 'active'
     }
-    
+
     const response = await getProducts(params)
-    
+
     // 由于在request.js中已经处理了响应拦截，这里直接使用返回的数据
     products.value = response.data
-    
+
     // 如果URL中有productId参数，自动设置过滤条件
     const productId = route.query.productId
     if (productId) {
       cardKeyFilters.value.productId = productId
       applyCardKeyFilters()
     }
-    
+
     // 如果有商品，默认选择第一个
     if (activeProducts.value.length > 0 && !cardKeyForm.value.productId) {
       cardKeyForm.value.productId = activeProducts.value[0].id
@@ -220,7 +219,7 @@ const handleRowAction = ({ action, item }) => {
 
 const showAddCardKeyModal = () => {
   if (activeProducts.value.length === 0) {
-    // 显示错误提示
+    showNotification('error', '无法添加卡密', '请先添加商品')
     return
   }
 
@@ -232,38 +231,24 @@ const showAddCardKeyModal = () => {
     removeDuplicates: false
   }
   previewCardKeys.value = []
-  modalType.value = 'addCardKey'
-  modalTitle.value = '添加卡密'
-  showModal.value = true
+  showAddModal.value = true
 }
 
-const closeModal = () => {
-  // 如果当前是预览模式，返回到添加卡密表单
-  if (modalType.value === 'previewCardKeys' && previousModalType.value) {
-    modalType.value = previousModalType.value
-    modalTitle.value = previousModalTitle.value
-  } else {
-    showModal.value = false
-  }
+const closeAddModal = () => {
+  showAddModal.value = false
 }
 
-const submitModal = async () => {
-  if (modalType.value === 'addCardKey') {
-    await submitCardKeys()
-  } else if (modalType.value === 'previewCardKeys') {
-    // 返回到添加卡密表单，恢复之前保存的状态
-    modalType.value = previousModalType.value || 'addCardKey'
-    modalTitle.value = previousModalTitle.value || (selectedProduct.value ?
-      `添加卡密 - ${selectedProduct.value.name}` :
-      '添加卡密')
-  } else {
-    closeModal()
-  }
+const closePreviewModal = () => {
+  showPreviewModal.value = false
+}
+
+const submitAddModal = async () => {
+  await submitCardKeys()
 }
 
 const previewCardKeysSplit = () => {
   if (!cardKeyForm.value.keys.trim()) {
-    // 显示错误提示
+    showNotification('error', '预览失败', '请输入卡密内容')
     return
   }
 
@@ -288,18 +273,12 @@ const previewCardKeysSplit = () => {
 
   previewCardKeys.value = keyArray
 
-  // 保存当前的表单状态，以便返回时恢复
-  previousModalType.value = modalType.value
-  previousModalTitle.value = modalTitle.value
-
-  // 切换到预览模式
-  modalType.value = 'previewCardKeys'
-  modalTitle.value = '卡密预览'
+  // 打开预览模态框
+  showPreviewModal.value = true
 }
 
 const submitCardKeys = async () => {
   if (!cardKeyForm.value.productId || !cardKeyForm.value.keys.trim()) {
-    // 显示错误提示
     showNotification('error', '提交失败', '请填写完整的卡密信息')
     return
   }
@@ -322,7 +301,7 @@ const submitCardKeys = async () => {
 
     // 由于在request.js中已经处理了响应拦截，这里直接关闭模态框并刷新数据
     showNotification('success', '添加成功', '卡密已成功添加')
-    closeModal()
+    closeAddModal()
     fetchCardKeys()
   } catch (error) {
     console.error('添加卡密失败:', error)
@@ -394,7 +373,6 @@ const batchDeleteCardKeys = async () => {
   }
 }
 
-
 // 生命周期钩子
 onMounted(() => {
   fetchCardKeys()
@@ -451,35 +429,18 @@ onMounted(() => {
         </button>
       </div>
 
-      <DataTable 
-        :headers="tableHeaders" 
-        :data="cardKeys" 
-        :loading="loading"
-        empty-text="没有找到卡密"
-        empty-icon="ri-key-line"
-        @row-action="handleRowAction"
-      />
-      
+      <DataTable :headers="tableHeaders" :data="cardKeys" :loading="loading" empty-text="没有找到卡密"
+        empty-icon="ri-key-line" @row-action="handleRowAction" />
+
       <!-- 分页控件 -->
-      <Pagination 
-        v-if="pagination.totalPages > 1"
-        :page="pagination.page"
-        :total-pages="pagination.totalPages"
-        :total-items="pagination.totalItems"
-        @page-change="handlePageChange"
-      />
+      <Pagination v-if="pagination.totalPages > 1" :page="pagination.page" :total-pages="pagination.totalPages"
+        :total-items="pagination.totalItems" @page-change="handlePageChange" />
     </div>
 
-    <!-- 模态框 -->
-    <ModalDialog 
-      :show="showModal" 
-      :title="modalTitle" 
-      :modal-type="modalType"
-      @close="closeModal"
-      @submit="submitModal"
-    >
-      <!-- 添加卡密表单 -->
-      <div v-if="modalType === 'addCardKey'" class="modal-form">
+    <!-- 添加卡密模态框 -->
+    <ModalDialog :show="showAddModal" :title="addModalTitle" modal-type="addCardKey" @close="closeAddModal"
+      @submit="submitAddModal">
+      <div class="modal-form">
         <div class="form-group">
           <label>选择商品</label>
           <select v-model.trim="cardKeyForm.productId" class="form-input">
@@ -516,17 +477,20 @@ onMounted(() => {
         </div>
         <div class="form-group">
           <label>卡密</label>
-          <textarea v-model.trim="cardKeyForm.keys" class="form-textarea" :placeholder="cardKeyForm.useDelimiter ? 
-              `请输入卡密，使用 ${cardKeyForm.delimiter || '#'} 分割多个卡密` : 
-              '请输入卡密，多个卡密请换行输入'"></textarea>
+          <textarea v-model.trim="cardKeyForm.keys" class="form-textarea" :placeholder="cardKeyForm.useDelimiter ?
+            `请输入卡密，使用 ${cardKeyForm.delimiter || '#'} 分割多个卡密` :
+            '请输入卡密，多个卡密请换行输入'"></textarea>
         </div>
         <div class="form-actions">
           <button class="btn-secondary" @click="previewCardKeysSplit">预览分割结果</button>
         </div>
       </div>
+    </ModalDialog>
 
-      <!-- 卡密预览 -->
-      <div v-if="modalType === 'previewCardKeys'" class="modal-form">
+    <!-- 卡密预览模态框 -->
+    <ModalDialog :show="showPreviewModal" :title="previewModalTitle" modal-type="previewCardKeys"
+      @close="closePreviewModal" @submit="closePreviewModal">
+      <div class="modal-form">
         <div class="preview-header">
           <h3>卡密预览 (共 {{ previewCardKeys.length }} 个)</h3>
         </div>
@@ -545,6 +509,4 @@ onMounted(() => {
   </div>
 </template>
 
-<style lang="less" scoped>
-
-</style>
+<style lang="less" scoped></style>

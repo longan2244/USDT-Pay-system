@@ -25,7 +25,9 @@ const getProducts = (req, res) => {
     // 更新商品的可用卡密数量
     const cardKeys = cardKeyModel.getAllCardKeys();
     productModel.updateProductsAvailableCount(cardKeys);
-
+    // products
+    // 反转
+    products.reverse();
     res.json({
       success: true,
       data: products

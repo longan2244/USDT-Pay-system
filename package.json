@@ -1,6 +1,6 @@
 {
   "name": "usdt-payment-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "USDT TRC20 Payment API",
   "main": "index.js",
   "scripts": {
@@ -16,6 +16,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "archiver": "^7.0.1",
     "axios": "^1.8.4",
     "bignumber.js": "^9.2.1",
     "dotenv": "^16.3.1",

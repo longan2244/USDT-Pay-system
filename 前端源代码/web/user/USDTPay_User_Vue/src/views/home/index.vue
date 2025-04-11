@@ -709,27 +709,13 @@ const searchCardsByContact = async () => {
 
 const copyToClipboard = async (text) => {
 
-
-
-
-
-  navigator.clipboard.writeText(text).then(() => {
-    MessageBox.success('复制成功！');
-  }).catch(err => {
-    var Url2 = text;
-    var oInput = document.createElement('input');
-    oInput.value = Url2;
-    document.body.appendChild(oInput);
-    oInput.select(); // 选择对象
-    document.execCommand("Copy"); // 执行浏览器复制命令
-    oInput.className = 'oInput';
-  }).catch(err => {
-
+  toClipboard(text).then(() => {
+    MessageBox.error('复制失败，请手动复制');
+  }).catch(() => {
+    MessageBox.error('复制失败，请手动复制');
   })
-    .catch(err => {
 
-      MessageBox.error('复制失败，请手动复制');
-    })
+
 
 };
 

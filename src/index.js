@@ -33,6 +33,10 @@ app.listen(PORT, () => {
     管理员页面：http://${ipAddress}:${PORT}/admin
     用户页面: ：http://${ipAddress}:${PORT}/
     `)
+  
+  
+  
+  
 
   transactionService.startMonitor();
 });
