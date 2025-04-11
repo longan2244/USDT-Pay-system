@@ -1,11 +1,5 @@
 # 依赖包
 node_modules/
 
-# 忽略 db 目录下的所有文件，但保留目录
-/db/*
-!/db/.gitkeep
 
-# 忽略 db自动备份 目录下的所有文件，但保留目录
-/db自动备份/*
-!/db自动备份/.gitkeep
 
