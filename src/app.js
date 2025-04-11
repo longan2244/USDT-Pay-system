@@ -57,7 +57,7 @@ setInterval(() => {
 setInterval(() => {
   backupDb();
   console.log('数据已自动备份到本地文件');
-}, 1000 * 60 * 60 * 10);
+}, 1000 * 60 * 60 * 12);
 
 
 
