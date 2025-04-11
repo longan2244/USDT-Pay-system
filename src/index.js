@@ -8,12 +8,6 @@ const { formatLog } = require('./utils/log')
 
 
 app.listen(PORT, () => {
-  // http://192.168.31.160:9998/admin/
-
-
-
-
-
   const ifaces = os.networkInterfaces();
   let ipAddress = '';
   for (const dev in ifaces) {
@@ -30,13 +24,14 @@ app.listen(PORT, () => {
   formatLog(`
     服务器IP地址：${ipAddress}
     项目端口：${PORT}
-    管理员页面：http://${ipAddress}:${PORT}/admin
+    管理员页面（初始密码123456）：http://${ipAddress}:${PORT}/admin
     用户页面: ：http://${ipAddress}:${PORT}/
+    请在管理员页面配置相关配置
     `)
-  
-  
-  
-  
+
+
+
+
 
   transactionService.startMonitor();
 });
