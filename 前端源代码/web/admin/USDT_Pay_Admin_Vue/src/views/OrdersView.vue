@@ -242,12 +242,7 @@ const formatOrderProducts = (order) => {
       return item.productName
     })
 
-    // 如果商品数量超过2个，只显示前2个并加上"等"
-    if (productNames.length > 2) {
-      return productNames.slice(0, 2).join(', ') + ' 等'
-    }
-
-    // 否则显示所有商品，用逗号分隔
+    // 显示所有商品，用逗号分隔
     return productNames.join(', ')
   }
 

@@ -32,7 +32,7 @@ request.interceptors.request.use(
 request.interceptors.response.use(
   response => {
     const res = response.data
-    
+
     // 如果返回的状态码不是200，说明接口请求有误
     if (!res.success) {
       console.error('接口请求错误:', res.message || '未知错误')
@@ -53,7 +53,7 @@ request.interceptors.response.use(
     } else {
       showNotification('error', '请求错误', error.message || '未知错误')
     }
-    
+
     // 处理HTTP错误状态码
     if (error.response) {
       const status = error.response.status

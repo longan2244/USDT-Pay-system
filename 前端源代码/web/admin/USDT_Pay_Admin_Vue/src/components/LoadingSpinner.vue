@@ -42,6 +42,7 @@ const sizeClass = computed(() => {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  // box-shadow: ;
 
   &.full-screen {
     position: fixed;
@@ -60,10 +61,10 @@ const sizeClass = computed(() => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: var(--color-bg-secondary);
+    // background-color: var(--color-bg-secondary);
     border-radius: var(--border-radius-lg);
     padding: var(--spacing-xl);
-    box-shadow: var(--shadow-lg);
+    // box-shadow: var(--shadow-lg);
   }
 
   .loading-spinner {
@@ -94,7 +95,8 @@ const sizeClass = computed(() => {
   .loading-text {
     margin-top: var(--spacing-md);
     font-size: var(--font-size-md);
-    color: var(--color-text-primary);
+    // color: var(--color-text-primary);
+    color: var(--color-accent);
     font-weight: 500;
   }
 }
@@ -103,6 +105,7 @@ const sizeClass = computed(() => {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

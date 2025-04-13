@@ -12,7 +12,7 @@
   "requiredConfirmations": 19,
   "checkTimeWindow": 60,
   "randomDecimalMin": 0.01,
-  "randomDecimalMax": 0.5,
+  "randomDecimalMax": 0.03,
   "maxPendingOrdersPerDevice": 2,
   "orderCreationCooldown": 5,
   "maxOrdersInCooldownPeriod": 2,

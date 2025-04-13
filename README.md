@@ -2,18 +2,21 @@
 
 <div align="center">
 
-![USDT支付系统](https://img.shields.io/badge/USDT-TRC20支付系统-green)
-![Node.js](https://img.shields.io/badge/Node.js-v16+-blue)
-![Express](https://img.shields.io/badge/Express-v5.1.0-lightblue)
-![Vue](https://img.shields.io/badge/Vue-v3.5+-brightgreen)
-![TronWeb](https://img.shields.io/badge/TronWeb-v5.3.3-orange)
-![BigNumber.js](https://img.shields.io/badge/BigNumber.js-v9.2.1-yellow)
+![USDT支付系统](https://img.shields.io/badge/USDT-TRC20自动发卡平台-green)
+![Stars](https://img.shields.io/github/stars/longan2244/USDT-Pay-system)
+![Forks](https://img.shields.io/github/forks/longan2244/USDT-Pay-system)
+![Issues](https://img.shields.io/github/issues/longan2244/USDT-Pay-system)
 
 </div>
 
 ## 📖 项目介绍
 
 这是一个基于Node.js和Vue.js开发的USDT TRC20支付系统，支持自动监控USDT转账交易，实现自动确认支付和订单处理。系统包含用户前端和管理员后台，适用于需要接受USDT支付的各类应用场景。
+
+> 🌐 在线演示：
+> - 用户端：[https://github-usdt-pay-system.lovedouyin.top](https://github-usdt-pay-system.lovedouyin.top)
+> - 管理员端：[https://github-usdt-pay-system.lovedouyin.top/admin](https://github-usdt-pay-system.lovedouyin.top/admin)
+
 ## 🚀 安装与部署
 
 > ### ⚡ [快速安装指南【查看】](./快速安装指南.md) ⚡
@@ -84,7 +87,7 @@
 
 ```bash
 git clone https://github.com/longan2244/USDT-Pay-system.git
-cd USDT-Pay-system-master
+cd USDT-Pay-system
 ```
 
 2. **安装依赖**
@@ -95,13 +98,42 @@ npm install
 yarn install
 ```
 
-3. **配置环境变量**
+3. **配置环境变量（或通过管理员面板进行设置）**
 
-创建 `.env` 文件在项目根目录，参考以下内容：
+在 `db\settings.json` 文件中配置系统参数：
 
-```
-PORT=9998
-JWT_SECRET=your_jwt_secret_key
+```json
+{
+  // 基础配置
+  "port": 9998,                    // 服务器监听端口
+  "jwtSecret": "NB666",           // JWT 认证密钥
+  "adminKey": "123456",           // 管理员登录密码
+
+  // TRON 网络配置
+  "walletAddress": "",            // USDT 收款钱包地址
+  "fullHost": "https://api.trongrid.io",  // TRON 网络 API 地址
+  "privateKey": "",               // 私钥（预留字段，未来扩展用）
+  "contractAddress": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",  // USDT 合约地址
+  "apiKey": "",                   // TRON API 密钥 (https://www.trongrid.io/)
+
+  // 交易监控配置
+  "pollingTime": 30,              // 交易轮询间隔（秒）
+  "expirationTime": 16,           // 订单过期时间（分钟）
+  "requiredConfirmations": 19,    // 交易确认数要求
+  "checkTimeWindow": 60,          // 交易检查时间窗口（分钟）
+
+  // 订单金额配置
+  "randomDecimalMin": 0.01,       // 随机小数最小值
+  "randomDecimalMax": 0.03,       // 随机小数最大值
+
+  // 订单限制配置
+  "maxPendingOrdersPerDevice": 2,  // 每设备最大待付订单数
+  "orderCreationCooldown": 5,      // 订单创建冷却时间（分钟）
+  "maxOrdersInCooldownPeriod": 2,  // 冷却期内最大订单数
+
+  // 系统维护配置
+  "dataSaveInterval": 5,          // 数据自动保存间隔（分钟）
+}
 ```
 
 4. **构建前端**
@@ -223,6 +255,9 @@ npm start
 - 新增数据库定期备份功能
 - 优化部分功能排序结构
 - 优化对于移动端的适配
+
+### v1.0.2
+- 优化操作体验
 
 
 ## 📄 许可证

@@ -47,7 +47,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://192.168.31.160:9998',
+        target: 'http://localhost:9998',
         changeOrigin: true,
         // 删除 rewrite 配置，保留原始路径
       }

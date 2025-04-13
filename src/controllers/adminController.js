@@ -472,11 +472,12 @@ const getAllProducts = (req, res) => {
     const totalPages = Math.ceil(totalItems / pageSize);
 
     // 排序（默认按ID升序）
-    products.sort((a, b) => a.id - b.id);
+    products.sort((a, b) => b.id - a.id);
 
     // 分页数据
     const paginatedProducts = products.slice((page - 1) * pageSize, page * pageSize);
-    paginatedProducts.reverse();
+    // 反转当前页的数据顺序
+    // paginatedProducts.reverse();
     res.json({
       success: true,
       data: paginatedProducts,
@@ -720,17 +721,17 @@ const updateSettings = async (req, res) => {
       // 服务器配置
       port,
       jwtSecret,
-      
+
       // 管理员配置
       adminKey,
-      
+
       // Tron配置
       walletAddress,
       fullHost,
       privateKey,
       contractAddress,
       apiKey,
-      
+
       // 订单配置
       pollingTime,
       expirationTime,
@@ -741,7 +742,7 @@ const updateSettings = async (req, res) => {
       maxPendingOrdersPerDevice,
       orderCreationCooldown,
       maxOrdersInCooldownPeriod,
-      
+
       // 数据保存配置
       dataSaveInterval
     } = req.body;
@@ -772,17 +773,17 @@ const updateSettings = async (req, res) => {
       // 服务器配置
       port,
       jwtSecret,
-      
+
       // 管理员配置
       adminKey,
-      
+
       // Tron配置
       walletAddress,
       fullHost,
       privateKey,
       contractAddress,
       apiKey,
-      
+
       // 订单配置
       pollingTime,
       expirationTime,
@@ -793,7 +794,7 @@ const updateSettings = async (req, res) => {
       maxPendingOrdersPerDevice,
       orderCreationCooldown,
       maxOrdersInCooldownPeriod,
-      
+
       // 数据保存配置
       dataSaveInterval
     });

@@ -46,13 +46,13 @@ const createPayment = async (req, res) => {
   try {
     // 检查关键设置是否已配置
     if (!settingsController.checkCriticalSettings()) {
-      return res.status(400).json({ 
-        success: false, 
+      return res.status(400).json({
+        success: false,
         message: 'Missing critical settings',
         details: '系统未配置钱包地址或API密钥，请联系管理员'
       });
     }
-    
+
     const { deviceUuid, productId, items, contactInfo } = req.body;
 
     if (!deviceUuid) {

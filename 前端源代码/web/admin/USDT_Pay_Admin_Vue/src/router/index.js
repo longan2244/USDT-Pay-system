@@ -1,15 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { nextTick } from 'vue'
 
-// 视图组件
-import DashboardView from '../views/DashboardView.vue'
-import OrdersView from '../views/OrdersView.vue'
-import ProductsView from '../views/ProductsView.vue'
-import CardKeysView from '../views/CardKeysView.vue'
-import SettingsView from '../views/SettingsView.vue'
-import LoginView from '../views/LoginView.vue'
-
-
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
@@ -20,40 +11,39 @@ const router = createRouter({
     {
       path: '/dashboard',
       name: 'dashboard',
-      component: DashboardView,
+      component: () => import('../views/DashboardView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/orders',
       name: 'orders',
-      component: OrdersView,
+      component: () => import('../views/OrdersView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/products',
       name: 'products',
-      component: ProductsView,
+      component: () => import('../views/ProductsView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/cardkeys',
       name: 'cardkeys',
-      component: CardKeysView,
+      component: () => import('../views/CardKeysView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/settings',
       name: 'settings',
-      component: SettingsView,
+      component: () => import('../views/SettingsView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/login',
       name: 'login',
-      component: LoginView,
+      component: () => import('../views/LoginView.vue'),
       meta: { requiresAuth: false }
     },
-    // 捕获所有未匹配的路由，重定向到仪表盘
     {
       path: '/:pathMatch(.*)*',
       redirect: '/dashboard'

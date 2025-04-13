@@ -102,7 +102,7 @@
                 <div class="address-label">钱包地址</div>
                 <div class="address-copy-group">
                   <input type="text" class="address-input" :value="currentPayment.paymentAddress" readonly>
-                  <button class="copy-address-btn" @click="copyToClipboard(currentPayment.paymentAddress)">
+                  <button class="copy-address-btn" @click.stop.prevent="copyToClipboard(currentPayment.paymentAddress)">
                     <i class="copy-icon"></i>
                     <span>复制</span>
                   </button>
@@ -289,7 +289,8 @@
                 <div v-for="card in myCards" :key="card.id" class="card-item">
                   <div class="card-header">
                     <span class="card-product">{{ card.productName }}</span>
-                    <button class="card-copy-btn" @click="copyToClipboard(card.key)">
+                    <!-- <button class="card-copy-btn" @click="copyToClipboard(card.key)"> -->
+                    <button class="card-copy-btn" @click.stop.prevent="copyToClipboard(card.key)">
                       <i class="card-copy-icon"></i>
                       <span>复制</span>
                     </button>
@@ -709,14 +710,21 @@ const searchCardsByContact = async () => {
 
 const copyToClipboard = async (text) => {
 
-  toClipboard(text).then(() => {
-    MessageBox.error('复制失败，请手动复制');
-  }).catch(() => {
-    MessageBox.error('复制失败，请手动复制');
-  })
 
-
-
+  try {
+    await navigator.clipboard.writeText(text);
+    MessageBox.success('复制成功');
+  } catch (error) {
+    console.error('复制失败:', error);
+    // 降级方案：使用 vue-clipboard3
+    try {
+      await toClipboard(text);
+      MessageBox.success('复制成功');
+    } catch (err) {
+      console.error('备用复制方案失败:', err);
+      MessageBox.error('复制失败，请手动复制');
+    }
+  }
 };
 
 // 生命周期钩子
@@ -1766,4 +1774,16 @@ onUnmounted(() => {
     font-size: 0.875rem;
   }
 }
-</style>
+
+// ... existing code ...
+.copy-address-btn,
+.card-copy-btn,
+.copy-all-btn,
+.btn-close {
+  &:focus {
+    outline: none;
+    box-shadow: none;
+  }
+}
+
+// ... existing code ...</style>

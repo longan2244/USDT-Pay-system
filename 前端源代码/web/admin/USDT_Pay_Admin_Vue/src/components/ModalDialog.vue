@@ -19,16 +19,24 @@ const props = defineProps({
 const emit = defineEmits(['close', 'submit'])
 
 const visible = ref(props.show)
-
+const mouseDownTarget = ref(null)
+// 监听show属性变化
 // 监听show属性变化
 watch(() => props.show, (newVal) => {
   visible.value = newVal
 })
+// 记录鼠标按下的目标元素
+const handleMouseDown = (event) => {
+  mouseDownTarget.value = event.target
+}
 
 // 关闭模态框
 const closeModal = () => {
-  visible.value = false
-  emit('close')
+  // 只有当鼠标按下和抬起的是同一个元素，且该元素是模态框背景时才关闭
+  if (event && !event.target.classList.contains('modal')) {
+    visible.value = false
+    emit('close')
+  }
 }
 
 // 提交模态框
@@ -44,7 +52,7 @@ const stopPropagation = (event) => {
 
 <template>
   <transition name="modal-fade">
-    <div v-if="visible" class="modal" @click="closeModal">
+    <div v-if="visible" class="modal" @click="closeModal" @mousedown="handleMouseDown">
       <div class="modal-backdrop"></div>
       <div class="modal-container" @click="stopPropagation">
         <div class="modal-header">
@@ -63,4 +71,33 @@ const stopPropagation = (event) => {
   </transition>
 </template>
 
-<style lang="less" scoped></style>
+<style lang="less" scoped>
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+
+  .modal-container {
+    transform: translateY(-20px);
+  }
+}
+
+.modal-fade-enter-to,
+.modal-fade-leave-from {
+  opacity: 1;
+
+  .modal-container {
+    transform: translateY(0);
+  }
+}
+
+.modal {
+  .modal-container {
+    transition: transform 0.3s ease;
+  }
+}
+</style>

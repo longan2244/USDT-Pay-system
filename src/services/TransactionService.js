@@ -608,117 +608,122 @@ class TransactionService {
    * 启动交易监控服务
    */
   async startMonitor() {
-    formatLog('启动USDT交易监控服务...');
+    try {
+      formatLog('启动USDT交易监控服务...');
 
-    // 检查API密钥和钱包地址是否已配置
-    if (!this.API_KEY || !config.tron.walletAddress) {
-      console.error('错误: 未配置API密钥或钱包地址，交易监控服务无法启动');
-      console.error('请在管理员界面配置API密钥和钱包地址');
-      // return;
-    }
-
-    let directApiCheckActive = false;
-
-    // 使用直接API方式检查交易的函数
-    const checkTransactionsByDirectApi = async () => {
-      if (directApiCheckActive) {
-        return; // 防止并发执行
+      // 检查API密钥和钱包地址是否已配置
+      if (!this.API_KEY || !config.tron.walletAddress) {
+        console.error('错误: 未配置API密钥或钱包地址，交易监控服务无法启动');
+        console.error('请在管理员界面配置API密钥和钱包地址');
+        // return;
       }
 
-      directApiCheckActive = true;
-      try {
-        const transfers = await this.getTransfersByDirectApi(5);
+      let directApiCheckActive = false;
 
-        if (transfers && transfers.length > 0) {
-          // 处理已确认的交易
-          for (const transfer of transfers) {
-            await this.processTransfer(transfer);
-          }
+      // 使用直接API方式检查交易的函数
+      const checkTransactionsByDirectApi = async () => {
+        if (directApiCheckActive) {
+          return; // 防止并发执行
         }
-      } catch (error) {
-        console.error('直接API检查交易失败:', error);
-      } finally {
-        directApiCheckActive = false;
-      }
-    };
 
-    // 立即执行一次直接API检查
-    await checkTransactionsByDirectApi();
+        directApiCheckActive = true;
+        try {
+          const transfers = await this.getTransfersByDirectApi(5);
 
-    // 定期使用直接API方式检查交易（每30秒）
-    const directApiInterval = setInterval(checkTransactionsByDirectApi, 15000);
+          if (transfers && transfers.length > 0) {
+            // 处理已确认的交易
+            for (const transfer of transfers) {
+              await this.processTransfer(transfer);
+            }
+          }
+        } catch (error) {
+          console.error('直接API检查交易失败:', error);
+        } finally {
+          directApiCheckActive = false;
+        }
+      };
 
-    // 定期检查待处理订单的交易
-    let monitoringActive = false;
-    const monitorInterval = setInterval(async () => {
-      // 防止并发执行
-      if (monitoringActive) {
-        return;
-      }
+      // 立即执行一次直接API检查
+      await checkTransactionsByDirectApi();
 
-      monitoringActive = true;
+      // 定期使用直接API方式检查交易（每30秒）
+      const directApiInterval = setInterval(checkTransactionsByDirectApi, 15000);
 
-      try {
-        const currentTime = Date.now();
-        const pendingOrders = orderModel.getPendingOrders();
+      // 定期检查待处理订单的交易
+      let monitoringActive = false;
+      const monitorInterval = setInterval(async () => {
+        // 防止并发执行
+        if (monitoringActive) {
+          return;
+        }
 
-        if (pendingOrders.length === 0) {
+        monitoringActive = true;
+
+        try {
+          const currentTime = Date.now();
+          const pendingOrders = orderModel.getPendingOrders();
+
+          if (pendingOrders.length === 0) {
+            monitoringActive = false;
+            return; // 没有待处理订单，跳过检查
+          }
+
+          // 获取钱包最近的已确认USDT转入交易
+          const confirmedTransfers = await this.getRecentTransfers(this.lastCheckTimestamp);
+
+          // 更新上次检查时间戳，减去5分钟以确保不会遗漏交易
+          this.lastCheckTimestamp = currentTime - 300000; // 5分钟前
+
+          // 处理已确认的交易 - 完成订单
+          if (confirmedTransfers && confirmedTransfers.length > 0) {
+            for (const transfer of confirmedTransfers) {
+              await this.processTransfer(transfer);
+            }
+          }
+
+          // 检查处于processing状态的订单的交易状态
+          const processingOrders = pendingOrders.filter(order =>
+            order.status === 'processing' && order.pendingTxHash
+          );
+
+          if (processingOrders.length > 0) {
+            await this.checkProcessingOrders(processingOrders);
+          }
+
+          // 检查过期订单
+          await this.checkExpiredOrders();
+
+          // 定期保存已处理的交易哈希
+          this.saveProcessedTransactions();
+        } catch (error) {
+          console.error('监控USDT转账出错:', error);
+        } finally {
           monitoringActive = false;
-          return; // 没有待处理订单，跳过检查
         }
+      }, 20000); // 默认每15秒检查一次
 
-        // 获取钱包最近的已确认USDT转入交易
-        const confirmedTransfers = await this.getRecentTransfers(this.lastCheckTimestamp);
-
-        // 更新上次检查时间戳，减去5分钟以确保不会遗漏交易
-        this.lastCheckTimestamp = currentTime - 300000; // 5分钟前
-
-        // 处理已确认的交易 - 完成订单
-        if (confirmedTransfers && confirmedTransfers.length > 0) {
-          for (const transfer of confirmedTransfers) {
-            await this.processTransfer(transfer);
-          }
-        }
-
-        // 检查处于processing状态的订单的交易状态
-        const processingOrders = pendingOrders.filter(order =>
-          order.status === 'processing' && order.pendingTxHash
-        );
-
-        if (processingOrders.length > 0) {
-          await this.checkProcessingOrders(processingOrders);
-        }
-
-        // 检查过期订单
-        await this.checkExpiredOrders();
-
-        // 定期保存已处理的交易哈希
+      // 添加清理函数
+      process.on('SIGINT', () => {
+        formatLog('正在关闭USDT交易监控服务...');
+        clearInterval(monitorInterval);
+        clearInterval(directApiInterval);
         this.saveProcessedTransactions();
-      } catch (error) {
-        console.error('监控USDT转账出错:', error);
-      } finally {
-        monitoringActive = false;
-      }
-    }, 20000); // 默认每15秒检查一次
+        process.exit(0);
+      });
 
-    // 添加清理函数
-    process.on('SIGINT', () => {
-      formatLog('正在关闭USDT交易监控服务...');
-      clearInterval(monitorInterval);
-      clearInterval(directApiInterval);
-      this.saveProcessedTransactions();
-      process.exit(0);
-    });
+      process.on('SIGTERM', () => {
+        formatLog('正在关闭USDT交易监控服务...');
+        clearInterval(monitorInterval);
+        clearInterval(directApiInterval);
+        this.saveProcessedTransactions();
+        process.exit(0);
+      });
 
-    process.on('SIGTERM', () => {
-      formatLog('正在关闭USDT交易监控服务...');
-      clearInterval(monitorInterval);
-      clearInterval(directApiInterval);
-      this.saveProcessedTransactions();
-      process.exit(0);
-    });
-
-    formatLog('USDT交易监控服务已启动');
+      formatLog('USDT交易监控服务已启动');
+    } catch (error) {
+      // 5秒后重试
+      setTimeout(() => this.startMonitor(), 5000);
+    }
   }
 
   /**

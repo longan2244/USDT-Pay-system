@@ -3,7 +3,7 @@ const app = require('./app');
 const config = require('./config');
 const transactionService = require('./services/TransactionService');
 const os = require('os');
-const PORT = process.env.PORT || config.defaultPort;
+const PORT = config.defaultPort;
 const { formatLog } = require('./utils/log')
 
 
